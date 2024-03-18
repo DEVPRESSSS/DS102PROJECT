@@ -52,14 +52,14 @@ class DashboardApp:
         tabview.place(relx=0.025,rely=0.01)
 
         tabview.add("tab 1") 
-        tabview.rename("tab 1","View transactions")
+        tabview.rename("tab 1","Manage Inventory")
         tabview.add("tab 2")  
-        tabview.rename("tab 2","View supplier")
+        tabview.rename("tab 2","Sales History")
         tabview.add("tab 3")
-        tabview.rename("tab 3","View purchase")
+        tabview.rename("tab 3","")
         tabview.set("View supplier")
 
-        button = CTkButton(master=tabview.tab("View transactions"))
+        button = CTkButton(master=tabview.tab("Manage Inventory"))
         button.pack(padx=20, pady=20)
         
 
