@@ -75,6 +75,20 @@ class Seller_dash_App:
                         )
         pname.place(relx=0.01, rely=0.09)
 
+        label_pic= CTkLabel(master=tabview.tab("Sell Products"),
+                              text="Product Picture:",
+                              font=("Tahoma",10,"bold"),
+                              text_color="#125B50")
+        label_pic.place(relx=0.532, rely=0.04)
+
+        Image_frame= CTkFrame(master=tabview.tab("Sell Products"),
+                              height=90,
+                              width=90,
+                              border_color="#125B50",
+                              border_width=1,
+                              fg_color="#FFFFFF")
+        
+        Image_frame.place(relx=0.53, rely=0.09)
 
         search_btn= CTkButton(master=tabview.tab("Sell Products"),
                               width=70,
@@ -100,54 +114,102 @@ class Seller_dash_App:
         qty.place(relx=0.01, rely=0.2)
        
         sell= CTkButton(master=tabview.tab("Sell Products"),
-                       width=90,
+                       width=120,
                        text="Sell",
                        cursor="hand2",
                        fg_color="#125B50" )
         sell.place(relx=0.01, rely=0.29)
 
         clear_btn= CTkButton(master=tabview.tab("Sell Products"),
-                       width=90,
+                       width=120,
                        text="Clear",
                        cursor="hand2",
                        fg_color="#FF6363" )
-        clear_btn.place(relx=0.13, rely=0.29)
+        clear_btn.place(relx=0.17, rely=0.29)
+
+        refresh_btn= CTkButton(master=tabview.tab("Sell Products"),
+                       width=120,
+                       text="Refresh",
+                       cursor="hand2",
+                       fg_color="#125B50" )
+        refresh_btn.place(relx=0.33, rely=0.29)
+
+        def combobox_callback(choice):
+            print("combobox dropdown clicked:", choice)
+
+        combobox_var = StringVar(value="option 2")
+        combobox = CTkComboBox(master=tabview.tab("Sell Products"), values=["option 1", "option 2"],
+                               
+                                            command=combobox_callback, width=90, variable=combobox_var)
+        combobox_var.set("option 2")
+
+        combobox.place(relx=0.49, rely=0.29)
+
+
+        filter_btn= CTkButton(master=tabview.tab("Sell Products"),
+                              width=70,
+                              text="Filter",
+                              fg_color="#FF6363",
+                              text_color="#FFFFFF")
+        filter_btn.place(relx=0.59, rely=0.29)
         
         separate_label= CTkLabel(master=tabview.tab("Sell Products"),
-                              text="Table Preview",
-                              font=("Arial",13),
+                              text="Product Table Preview",
+                              
                               text_color="#FFFFFF",
-                              fg_color="#E5C287",
-                              width=506,
+                              fg_color="#125B50",
+                              width=612,
                               height=25,
                               corner_radius=5
                               )
                               
         separate_label.place(relx=0.01, rely=0.38)
 
-        custom_headers = ["ProdcutID", "ProductName", "Description", "Category", "Price","Current Stock"]
+        custom_headers = ["ProductID", "ProductName", "Description", "Category", "Price","Current Stock"]
 
        
-        query = "SELECT * FROM sellers_tbl"
+        query = "SELECT * FROM products"
         my_db.execute(query)
         data =  my_db.fetchall()
 
         table_data= [custom_headers]+ data
       
-        table = CTkTable(master=tabview.tab("Sell Products"), row=0, column=6,
+       
+        table_frame = CTkScrollableFrame(tabview.tab("Sell Products"), width=590,height=250,fg_color="#FFFFFF",
+                                         border_color="#125B50",border_width=0.5)
+        
+        table = CTkTable(master=table_frame, row=0, column=6,
                          colors=["#F8F8F8", "#EAEAEA"],
                          values= table_data,
-                         header_color=("#FAF5E4"),
+                        #  header_color=("#FAF5E4"),
+                         header_color=("#E5C287"),
                          font=("Tahoma",10,"bold"),
-                         width=80,
+                         width=10,
                          height=20,
+                         padx=0.5,
+                         justify="left"
+                         
                          )
         
       
         row_selector = CTkTableRowSelector(table)
         
-        table.place(relx=0.01, rely=0.45)
+        table.pack()
+        table_frame.place(relx=0.01, rely=0.45) 
 
+        label_receipt= CTkLabel(master=tabview.tab("Sell Products"),
+                              text="RECEIPT PREVIEW",
+                              font=("Tahoma",10,"bold"),
+                              text_color="#125B50")
+        label_receipt.place(relx=0.78, rely=0.04)
+
+        receipt_frame= CTkFrame(master= tabview.tab("Sell Products"),
+                                height=300,
+                                width=300,
+                                border_width=1,
+                                border_color="#125B50",
+                                fg_color="#FFFFFF")
+        receipt_frame.place(relx=0.672, rely=0.09)
     
 
        
