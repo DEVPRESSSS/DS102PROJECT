@@ -10,7 +10,8 @@ import mysql.connector
 from tkinter import messagebox,ttk
 from CTkTable import *
 from CTkTableRowSelector import *
-
+from CTkMessagebox import*
+from decimal import Decimal
 
 
 
@@ -33,6 +34,49 @@ class Seller_dash_App:
     def setup_seller_dashboard(self):
         self.master.geometry("1034x600")
         self.master.minsize(1034, 600)
+
+
+
+        def show_error():
+             CTkMessagebox(title="Invalid Input", message="Please put value in Quantity textbox", icon="cancel")
+
+        
+        
+
+        def ask_question(price_product, current_name, result):
+            msg = CTkMessagebox(title="Confirmation", message="Do you want to process this transaction?",
+                                icon="question", option_1="No", option_2="Yes")
+            response = msg.get()
+            
+            if response == "Yes":
+                total = Decimal(result)
+                new_content = f"{current_name}\t{price_product}\t{total}\n"
+                
+                existing_content = [line for line in preview_receipt.cget("text").splitlines()[3:] if line.strip() and not line.startswith("Grand Total:")]
+                            
+                updated_dynamic_content = '\n'.join(existing_content + [new_content])             
+           
+                grand_total = sum(Decimal(line.split('\t')[2]) for line in existing_content) + total
+                
+                updated_receipt_text = "===========BODENGHARDWARE============\n" \
+                                    "================Receipt===============\n" \
+                                    "ProductName\tPrice\tTotal\n" + \
+                                    updated_dynamic_content
+                
+                updated_receipt_text += f"\nGrand Total:\t\t{grand_total}\n"
+                
+                preview_receipt.configure(text=updated_receipt_text)
+            else:
+                print("Click 'No' to cancel!")
+
+
+
+
+
+
+
+        # def receipt(result):
+        #     print(result)
 
         frame = CTkFrame(
             master=self.master,
@@ -90,21 +134,85 @@ class Seller_dash_App:
         
         Image_frame.place(relx=0.53, rely=0.09)
 
+
+
+
+        #Search functionality on products
+        
+        def search_product():
+            search=pname.get().strip()
+            
+            # custom_headers = ["ProductID", "ProductName", "Description", "Category", "Price","Current Stock"]
+
+            if search:
+               
+               query= "SELECT * FROM products where ProductName LIKE %s OR Price LIKE %s"
+               value= ("%" + search + "%","%" + search + "%")
+            else:
+                query = "SELECT * FROM sellers_tbl"
+                value = ()
+            my_db.execute(query, value)
+            data = my_db.fetchall()
+             
+            filtered_data = []
+            for row in data:
+                if search.lower() in row[1].lower() or search.lower() in str(row[4]).lower():
+                    filtered_data.append(row)
+            
+            # Include custom headers
+            table_data = [custom_headers] + filtered_data
+            column_widths = [100, 200, 200, 100, 100, 100]
+            table.update_values(table_data)
+            table.configure(width=sum(column_widths))
+
+
+
         search_btn= CTkButton(master=tabview.tab("Sell Products"),
                               width=70,
                               text="Search",
                               cursor="hand2",
-                              fg_color="#125B50"
+                              fg_color="#125B50",
+                              command=search_product
                              
                               )
         
         search_btn.place(relx=0.226, rely=0.09)
 
+
+        
         label_qty= CTkLabel(master=tabview.tab("Sell Products"),
                               text="Quantity:",
                               font=("Tahoma",10,"bold"),
                               text_color="#125B50")
         label_qty.place(relx=0.01, rely=0.15)
+
+
+
+        def qty_count():
+            current_name=pname.get()
+            qtys = qty.get()
+
+            try:
+               
+                qtys_decimal = Decimal(qtys)
+            except:
+               
+                show_error()
+                return
+            if qtys is not None:
+
+              result= price_product * qtys_decimal
+              ask_question( price_product, current_name,result)
+              
+            else:
+                show_error()
+           
+
+
+
+          
+
+
 
         qty = CTkEntry(master=tabview.tab("Sell Products"),
                             border_color="#125B50",
@@ -117,7 +225,8 @@ class Seller_dash_App:
                        width=120,
                        text="Sell",
                        cursor="hand2",
-                       fg_color="#125B50" )
+                       fg_color="#125B50",
+                       command=qty_count )
         sell.place(relx=0.01, rely=0.29)
 
         clear_btn= CTkButton(master=tabview.tab("Sell Products"),
@@ -126,12 +235,31 @@ class Seller_dash_App:
                        cursor="hand2",
                        fg_color="#FF6363" )
         clear_btn.place(relx=0.17, rely=0.29)
+         #REFRESH BUTTON 
+        def refresh():
+            # table.delete_rows(list(range(1, len(table_data))))
+
+            query = "SELECT * FROM products"
+            my_db.execute(query)
+            data = my_db.fetchall()
+
+            # Populate the table with the fetched data
+            table_data.clear()  # Clear existing data
+            table_data.extend([custom_headers] + data)
+            table.update_values(table_data)
+
+            
+
+            
+            
 
         refresh_btn= CTkButton(master=tabview.tab("Sell Products"),
                        width=120,
                        text="Refresh",
                        cursor="hand2",
-                       fg_color="#125B50" )
+                       fg_color="#125B50",
+                       command=refresh)
+                       
         refresh_btn.place(relx=0.33, rely=0.29)
 
         def combobox_callback(choice):
@@ -164,7 +292,33 @@ class Seller_dash_App:
                               )
                               
         separate_label.place(relx=0.01, rely=0.38)
+       
+        #TABLE CLICK FUNCTIONALITY>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+        global highlighted_row
+        highlighted_row = None
+        def users(cell):
+                global highlighted_row
+
+                if cell["row"]==0:
+                     return 
+                if highlighted_row is not None:
+                    table.edit_row(highlighted_row, fg_color=table.fg_color if highlighted_row % 2 == 0 else table.fg_color2)
+                if cell["row"] != highlighted_row:
+                    table.edit_row(cell["row"], fg_color=table.hover_color)
+                    highlighted_row = cell["row"]
+                    price_index = custom_headers.index("Price")
+                    global price_product
+                    price_product = table_data[cell["row"] + 1][price_index] 
+                    
+                    if cell["row"] + 1 < len(table_data):
+                        
+                        product_name = table_data[cell["row"] + 1][1]
+                        pname.delete(0, 'end')
+                        pname.insert(0, product_name)
+                else:
+                    highlighted_row = None
+        global custom_headers
         custom_headers = ["ProductID", "ProductName", "Description", "Category", "Price","Current Stock"]
 
        
@@ -177,25 +331,26 @@ class Seller_dash_App:
        
         table_frame = CTkScrollableFrame(tabview.tab("Sell Products"), width=590,height=250,fg_color="#FFFFFF",
                                          border_color="#125B50",border_width=0.5)
-        
+
         table = CTkTable(master=table_frame, row=0, column=6,
                          colors=["#F8F8F8", "#EAEAEA"],
                          values= table_data,
-                        #  header_color=("#FAF5E4"),
                          header_color=("#E5C287"),
                          font=("Tahoma",10,"bold"),
                          width=10,
                          height=20,
                          padx=0.5,
-                         justify="left"
+                         justify="left",
+                         command=users,
                          
                          )
-        
-      
-        row_selector = CTkTableRowSelector(table)
-        
+
+       
         table.pack()
-        table_frame.place(relx=0.01, rely=0.45) 
+
+        table_frame.place(relx=0.01, rely=0.45)
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
 
         label_receipt= CTkLabel(master=tabview.tab("Sell Products"),
                               text="RECEIPT PREVIEW",
@@ -210,7 +365,11 @@ class Seller_dash_App:
                                 border_color="#125B50",
                                 fg_color="#FFFFFF")
         receipt_frame.place(relx=0.672, rely=0.09)
-    
+        preview_receipt= CTkLabel(master= receipt_frame,
+                              text="",
+                              font=("Tahoma",10,"bold"),
+                              text_color="#125B50")
+        preview_receipt.place(relx=0.025, rely=0.02)
 
        
 

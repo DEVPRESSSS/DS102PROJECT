@@ -354,6 +354,7 @@ search.place(relx=0.68, rely=0.79)
 
 def search_sellers():
     search_term = search.get().strip()
+    
     if search_term:
         query = "SELECT * FROM sellers_tbl WHERE fullname LIKE %s OR email LIKE %s"
         values = ("%" + search_term + "%", "%" + search_term + "%")
@@ -363,7 +364,8 @@ def search_sellers():
 
     my_db.execute(query, values)
     data = my_db.fetchall()
-
+    
+    
     for item in tree.get_children():
         tree.delete(item)
 
