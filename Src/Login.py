@@ -30,8 +30,43 @@ class ChangePassWindow(tk.Toplevel):
         self.title("Change Password")
         self.geometry("688x375")
         self.setup_ui()
-
+    def back_to_login(self):
+        self.destroy()
+        self.login_app.deiconify()
     def setup_ui(self):
+
+
+        def change_pass():
+            p1= password_one.get()
+            p2= password_two.get()
+            verified_email
+        
+            query_users="SELECT * FROM sellers_tbl WHERE email= %s"
+
+            cursor.execute(query_users, (verified_email,))
+            user_data = cursor.fetchone()
+
+            if not user_data:
+                query_users="SELECT * FROM admin WHERE email= %s"
+                cursor.execute(query_users, (verified_email,))
+                user_data = cursor.fetchone()
+            if user_data:
+                if p1 == p2:
+                        query_update_sellers = "UPDATE sellers_tbl SET password = %s WHERE email = %s"
+                        cursor.execute(query_update_sellers, (p1, verified_email))
+
+                        query_update_admin = "UPDATE admin SET password = %s WHERE email = %s"
+                        cursor.execute(query_update_admin, (p1, verified_email))
+
+
+                        my_connection.commit()
+                        messagebox.showinfo("Success", "Password updated successfully!")
+                        self.back_to_login()
+                else:
+                    messagebox.showerror("Error", "Passwords do not match!")
+
+
+
         frame = CTkFrame(master=self, width=688, height=375, fg_color="#F4F5F6")
         frame.pack(padx=10, pady=10,expand=True,)
 
@@ -48,7 +83,6 @@ class ChangePassWindow(tk.Toplevel):
         password_label= CTkLabel(master=frame, text="Enter password",font=("Tahoma",12),text_color="#100E75")
         password_label.place(relx=0.6, rely=0.23)
 
-
         password_one=CTkEntry(master=frame,width=200, placeholder_text="Enter password",border_color="#9391E6",border_width=2)
         password_one.place(relx=0.6, rely=0.3)
 
@@ -58,13 +92,11 @@ class ChangePassWindow(tk.Toplevel):
         password_two=CTkEntry(master=frame,width=200, placeholder_text="Enter codes",border_color="#9391E6",border_width=2)
         password_two.place(relx=0.6, rely=0.56)
       
-        changepass_btn = CTkButton(master=frame, font=("Tahoma",12,"bold"),fg_color="#9391E6",text="SUBMIT", width=200)
+        changepass_btn = CTkButton(master=frame, font=("Tahoma",12,"bold"),fg_color="#9391E6",text="SUBMIT", width=200,command=change_pass)
         changepass_btn.place(relx=0.6, rely=0.68)
 
 
-    def back_to_login(self):
-        self.destroy()
-        self.login_app.deiconify()
+    
 
 
 #forgot pass Classs
@@ -104,7 +136,8 @@ class ForgotPassWindow(tk.Toplevel):
                 if user_data:
                     global codes
                     codes = generate_code()
-                    
+                    global verified_email
+                    verified_email= email_text
                     send_email(email_text, codes)
                     
                     messagebox.showinfo("Success", "Code sent to your email. Check your inbox.")
@@ -133,8 +166,6 @@ class ForgotPassWindow(tk.Toplevel):
         def the_code():
             global codes
 
-
-            
             six_codes = code.get()
             
             if not six_codes:
