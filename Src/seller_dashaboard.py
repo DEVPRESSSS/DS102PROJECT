@@ -41,7 +41,7 @@ class Seller_dash_App:
              CTkMessagebox(title="Invalid Input", message="Please put value in Quantity textbox", icon="cancel")
 
         
-        
+#==============================================================================================================      
 
         def ask_question(price_product, current_name, result):
             msg = CTkMessagebox(title="Confirmation", message="Do you want to process this transaction?",
@@ -69,14 +69,7 @@ class Seller_dash_App:
             else:
                 print("Click 'No' to cancel!")
 
-
-
-
-
-
-
-        # def receipt(result):
-        #     print(result)
+#==============================================================================================================
 
         frame = CTkFrame(
             master=self.master,
@@ -136,14 +129,13 @@ class Seller_dash_App:
 
 
 
+#==============================================================================================================      
 
         #Search functionality on products
         
         def search_product():
             search=pname.get().strip()
             
-            # custom_headers = ["ProductID", "ProductName", "Description", "Category", "Price","Current Stock"]
-
             if search:
                
                query= "SELECT * FROM products where ProductName LIKE %s OR Price LIKE %s"
@@ -153,17 +145,17 @@ class Seller_dash_App:
                 value = ()
             my_db.execute(query, value)
             data = my_db.fetchall()
-             
-            filtered_data = []
-            for row in data:
-                if search.lower() in row[1].lower() or search.lower() in str(row[4]).lower():
-                    filtered_data.append(row)
+
+
+            table_data.clear()  
+            table_data.extend([custom_headers] + data)
+            table.configure(values=table_data)
+
             
-            # Include custom headers
-            table_data = [custom_headers] + filtered_data
-            column_widths = [100, 200, 200, 100, 100, 100]
-            table.update_values(table_data)
-            table.configure(width=sum(column_widths))
+
+            
+             
+#==============================================================================================================      
 
 
 
@@ -186,6 +178,7 @@ class Seller_dash_App:
                               text_color="#125B50")
         label_qty.place(relx=0.01, rely=0.15)
 
+#==============================================================================================================      
 
 
         def qty_count():
@@ -207,12 +200,7 @@ class Seller_dash_App:
             else:
                 show_error()
            
-
-
-
-          
-
-
+#==============================================================================================================      
 
         qty = CTkEntry(master=tabview.tab("Sell Products"),
                             border_color="#125B50",
@@ -235,6 +223,8 @@ class Seller_dash_App:
                        cursor="hand2",
                        fg_color="#FF6363" )
         clear_btn.place(relx=0.17, rely=0.29)
+#==============================================================================================================      
+
          #REFRESH BUTTON 
         def refresh():
             # table.delete_rows(list(range(1, len(table_data))))
@@ -243,11 +233,10 @@ class Seller_dash_App:
             my_db.execute(query)
             data = my_db.fetchall()
 
-            # Populate the table with the fetched data
-            table_data.clear()  # Clear existing data
+            table_data.clear()  
             table_data.extend([custom_headers] + data)
             table.update_values(table_data)
-
+#==============================================================================================================
             
 
             

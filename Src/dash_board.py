@@ -24,22 +24,31 @@ my_connection= mysql.connector.connect(
 )
 my_db= my_connection.cursor()
 
-class DashboardApp:
-    def __init__(self, master):
-        self.master = master
+
+
+class AddSellerWindow(tk.Toplevel):
+    def __init__(self, login_app):
+        super().__init__(login_app)
+        self.login_app = login_app
+        self.title("Forgot Password")
+        self.geometry("688x375")
+        self.setup_ui()
+
+    def setup_ui(self):
+        pass
+
+class DashboardApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
         self.setup_dashboard()
+        self.geometry("1034x600")
+        self.minsize(1034, 600)
         self.seller_report() 
         self.categories_report()
         self.products_report()
-    def open_add_seller(self):
-          self.master.destroy()
-          subprocess.Popen(["python", r"D:\DS102PROJECT\Src\addseller.py"])
-    def open_add_product(self):
-          self.master.destroy()
-          subprocess.Popen(["python", r"D:\DS102PROJECT\Src\manage_product.py"])
+  
     def setup_dashboard(self):
-        self.master.geometry("1034x600")
-        self.master.minsize(1034, 600)
+        
 
         frame = CTkFrame(
             master=self.master,
@@ -59,8 +68,8 @@ class DashboardApp:
             height=545,
             width=200,
             border_width=1,
-            border_color="#1B770C",
-            fg_color="#1B770C"
+            border_color="#F4F5F6",
+            fg_color="#FFFFFF"
         )
         sidebar.place(relx=0.02, rely=0.03)
 
@@ -71,25 +80,24 @@ class DashboardApp:
             text="Manage product",
             height=25,
             width=button_width,
-            fg_color="transparent",
+            fg_color="#A3B0F1",
             border_width=1,
             hover_color="#C850C0",
             border_color="#FFFFFF",
             corner_radius=10,
             font=("Tahoma", 10, "bold"),
             cursor="hand2",
-            command=self.open_add_product
             
         )
         product_btn.place(relx=0.2, rely=0.2)
 
-        
+        # img_2 = Image.open("/DS102PROJECT/Icon/increase.png")
         categories_btn = CTkButton(
             master=sidebar,
             text="Manage category",
             height=25,
             width=button_width,
-            fg_color="transparent",
+            fg_color="#A3B0F1",
             border_width=1,
             hover_color="#C850C0",
             border_color="#FFFFFF",
@@ -105,12 +113,12 @@ class DashboardApp:
                 text="Manage seller",
                 height=25,
                 width=button_width,
-                fg_color="transparent",
+               
                 border_width=1,
-                hover_color="#C850C0",
+                fg_color="#A3B0F1",
                 border_color="#FFFFFF",
                 corner_radius=10,
-                command=self.open_add_seller,
+                # command=self.open_add_seller,
                 font=("Tahoma", 10,"bold"),
                 # image=CTkImage(dark_image=img_3, light_image=img_3),
                 cursor="hand2" 
@@ -121,7 +129,7 @@ class DashboardApp:
                             text="Sales report",
                             height=25,
                             width=button_width,
-                            fg_color="transparent",
+                            fg_color="#A3B0F1",
                             border_width=1,
                             hover_color="#C850C0",
                             border_color="#FFFFFF",
@@ -133,13 +141,13 @@ class DashboardApp:
                             )
         sales_report.place(relx=0.2, rely=0.38)
 
-        # img_5 = Image.open("/DS102PROJECT/Icon/increase.png")  # Replace with the actual path
+        # img_5 = Image.open("/DS102PROJECT/Icon/increase.png")  
         view_chart = CTkButton(
             master=sidebar,
             text="View Chart",
             height=25,
             width=button_width,
-            fg_color="transparent",
+            fg_color="#A3B0F1",
             border_width=1,
             hover_color="#C850C0",
             border_color="#FFFFFF",
@@ -156,7 +164,7 @@ class DashboardApp:
                         text="Manage profile",
                         height=25,
                         width=button_width,
-                        fg_color="transparent",
+                        fg_color="#A3B0F1",
                         border_width=1,
                         hover_color="#C850C0",
                         border_color="#FFFFFF",
@@ -166,6 +174,7 @@ class DashboardApp:
                         cursor="hand2" 
                         )
         view_profile.place(relx=0.2, rely=0.50)
+
     #DAILY REPORTS
 
         reports= CTkFrame(master=frame,
@@ -283,7 +292,7 @@ class DashboardApp:
         button = CTkButton(master=tabview.tab("View transactions"))
         button.pack(padx=20, pady=20)
         
-
+    
 
     def seller_report(self):  
         global seller_count
@@ -354,17 +363,18 @@ class DashboardApp:
         canvas = FigureCanvasTkAgg(fig, master=chart_window)
         canvas_widget = canvas.get_tk_widget()
         canvas_widget.pack()
-
+    def change_password(self):
+        self.withdraw()
+        AddSellerWindow(self)
     
 
        
 
 
 def main():
-    root = CTk()
-    root.title("Your Dashboard Title")  
-    app = DashboardApp(root)
-    root.mainloop()
+ 
+    app= DashboardApp()
+    app.mainloop()
     
 
 

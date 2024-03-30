@@ -4,7 +4,10 @@ from pathlib import Path
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
 from dash_board import DashboardApp
 import mysql.connector
-from tkinter import messagebox
+from customtkinter import*
+import customtkinter
+from tkinter import messagebox,ttk
+
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r"\DS102PROJECT\Assets\assets\frame0")
 
@@ -184,9 +187,23 @@ button_2 = Button(
     command=lambda:print("hello world"),
     relief="flat"
 )
+
+def checkbox_event():
+    
+    if check_var.get() == "on":
+        entry_2.configure(show="")
+    else:
+        entry_2.configure(show="*")
+check_var = customtkinter.StringVar(value="off")
+
+checkbox = CTkCheckBox(master=canvas, text="show password", command=checkbox_event,
+                                     variable=check_var, onvalue="on", offvalue="off",checkbox_height=10, checkbox_width=15,
+                                     bg_color="#FFFFFF", font=("Tahoma", 10))
+checkbox.place(x=540, y=235)
+
 button_2.place(
-    x=499.0,
-    y=245.0,
+    x=500.0,
+    y=310.0,
     width=72.0,
     height=14.0
 )
