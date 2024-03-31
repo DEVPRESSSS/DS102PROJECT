@@ -11,6 +11,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import dash_board
 import subprocess
+import re
+
 
 my_connection= mysql.connector.connect(
 
@@ -21,7 +23,12 @@ my_connection= mysql.connector.connect(
                 database="hardware_db"
             
 )
+
+
 cursor= my_connection.cursor()
+
+
+
 #Change passs
 class ChangePassWindow(tk.Toplevel):
     def __init__(self, login_app):
@@ -118,12 +125,12 @@ class ForgotPassWindow(tk.Toplevel):
         def generate_code():
             code_length = 6
             return ''.join(random.choices( string.digits, k=code_length))
-
         def send_code_method():
             email_text = email.get()
             if not email_text:
                 messagebox.showerror("Error", "Please fill the email textbox!")
             else:
+               
                 query_users = "SELECT * FROM sellers_tbl WHERE email = %s"
                 cursor.execute(query_users, (email_text,))
                 user_data = cursor.fetchone()
@@ -139,7 +146,8 @@ class ForgotPassWindow(tk.Toplevel):
                     global verified_email
                     verified_email= email_text
                     send_email(email_text, codes)
-                    
+                   
+                    code.configure(state='normal')
                     messagebox.showinfo("Success", "Code sent to your email. Check your inbox.")
                     email.delete(0,'end')
 
@@ -165,21 +173,25 @@ class ForgotPassWindow(tk.Toplevel):
     
         def the_code():
             global codes
-
+             
             six_codes = code.get()
+            
+        
+          
             
             if not six_codes:
                 messagebox.showerror("Error", "Invalid Input.")
 
    
             elif six_codes==codes:
+                 
                   messagebox.showinfo("Succcess", "You can now change your password!.")
 
                   self.change_password()
             else:
                 messagebox.showerror("Error", "The code have entered did not match.")
-
-      
+        
+         
         frame = CTkFrame(master=self, width=688, height=375, fg_color="#F4F5F6")
         frame.pack(padx=10, pady=10,expand=True,)
 
@@ -192,12 +204,19 @@ class ForgotPassWindow(tk.Toplevel):
         image_label = customtkinter.CTkLabel(master=frame, image=my_image, text="")
         image_label.place(relx=0.1,rely=0.1)
 
-
         email_label= CTkLabel(master=frame, text="Email:",font=("Tahoma",12),text_color="#100E75")
         email_label.place(relx=0.6, rely=0.23)
 
-
-        email=CTkEntry(master=frame,width=200, placeholder_text="Enter email",border_color="#9391E6",border_width=2)
+        def on_validate( entry_value):
+   
+            return  len(entry_value) < 30 
+        def on_limit(char, entry_value):
+            return  len(entry_value) < 30
+        def on_code(char, entry_value):
+             return char.isdigit() and len(entry_value) <= 6
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<EMAIL VALIDATAION AND CODE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        email=CTkEntry(master=frame,width=200, placeholder_text="Enter email",border_color="#9391E6",border_width=2,
+                       validate="key",validatecommand=(frame.register(on_validate),"%P"))
         email.place(relx=0.6, rely=0.3)
 
         send_code=CTkButton(master=frame, font=("Tahoma",12,"bold"),text="SEND CODE",fg_color="#9391E6", width=100,command=send_code_method)
@@ -206,8 +225,10 @@ class ForgotPassWindow(tk.Toplevel):
         code_label= CTkLabel(master=frame, text="Enter 6 digits code",font=("Tahoma",12),text_color="#100E75")
         code_label.place(relx=0.6, rely=0.48)
         
-        code=CTkEntry(master=frame,width=200, placeholder_text="Enter codes",border_color="#9391E6",border_width=2)
+        code=CTkEntry(master=frame,width=200, placeholder_text="Enter codes",border_color="#9391E6",border_width=2,
+                       validate="key",validatecommand=(frame.register(on_code), "%S", "%P"),justify="center", state='disabled')
         code.place(relx=0.6, rely=0.56)
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       
         verify = CTkButton(master=frame, font=("Tahoma",12,"bold"),fg_color="#9391E6",text="SUBMIT", width=200, command=the_code)
         verify.place(relx=0.6, rely=0.68)
@@ -236,11 +257,11 @@ class LoginApp(tk.Tk):
     def setup_login(self):
 
         def login_clicked():
-        
+       
             my_db= my_connection.cursor()
             emails = email.get()
             passwords = password.get()
-
+            
             if not all([emails,passwords]):
                 messagebox.showerror("Error", "All fields are required!")
                 return
@@ -269,6 +290,9 @@ class LoginApp(tk.Tk):
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<lOGIN WIDGETS>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         frame = CTkFrame(master=self, width=688, height=375, fg_color="#F4F5F6")
         frame.pack(padx=10, pady=10,expand=True,)
+
+       
+        
         my_image = customtkinter.CTkImage(light_image=Image.open("D:\\DS102PROJECT\\Icon\\image_3.png"),
                                   size=(300, 300))
 
@@ -279,14 +303,29 @@ class LoginApp(tk.Tk):
         email_label= CTkLabel(master=frame, text="Email:",font=("Tahoma",12),text_color="#100E75")
         email_label.place(relx=0.6, rely=0.32)
 
-        email=CTkEntry(master=frame,width=200, placeholder_text="Enter email",border_color="#9391E6",border_width=2)
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<EMAIL VALIDATION AND PASSWORD>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        def on_validate( entry_value):
+   
+            return  len(entry_value) < 30 
+        def on_limit(char, entry_value):
+            return  len(entry_value) < 30 
+      
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<EMAIL VALIDATION>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      
+        email=CTkEntry(master=frame,width=200, placeholder_text="Enter email",border_color="#9391E6",border_width=2,
+                       validate="key",validatecommand=(frame.register(on_validate),"%P")
+)
         email.place(relx=0.6, rely=0.4)
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<EMAIL VALIDATION>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
 
         password_label= CTkLabel(master=frame, text="Password:",font=("Tahoma",12),text_color="#100E75")
         password_label.place(relx=0.6, rely=0.48)
         
-        password=CTkEntry(master=frame,width=200, placeholder_text="Enter password",border_color="#9391E6",border_width=2,show="*")
+        password=CTkEntry(master=frame,width=200, placeholder_text="Enter password",border_color="#9391E6",border_width=2,show="*",
+                          validate="key",validatecommand=(frame.register(on_limit),"%S","%P"))
         password.place(relx=0.6, rely=0.56)
+
 
         def checkbox_event():
     
