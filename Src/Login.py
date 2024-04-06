@@ -41,7 +41,8 @@ class ChangePassWindow(tk.Toplevel):
         self.destroy()
         self.login_app.deiconify()
     def setup_ui(self):
-
+        def on_limit(char, entry_value):
+            return  len(entry_value) < 30 
 
         def change_pass():
             p1= password_one.get()
@@ -58,7 +59,13 @@ class ChangePassWindow(tk.Toplevel):
                 cursor.execute(query_users, (verified_email,))
                 user_data = cursor.fetchone()
             if user_data:
+                if not p1 or not p2:
+                     messagebox.showerror("Error", "Password is empty!!")
+
+                     return
+
                 if p1 == p2:
+                        
                         query_update_sellers = "UPDATE sellers_tbl SET password = %s WHERE email = %s"
                         cursor.execute(query_update_sellers, (p1, verified_email))
 
@@ -90,13 +97,33 @@ class ChangePassWindow(tk.Toplevel):
         password_label= CTkLabel(master=frame, text="Enter password",font=("Tahoma",12),text_color="#100E75")
         password_label.place(relx=0.6, rely=0.23)
 
-        password_one=CTkEntry(master=frame,width=200, placeholder_text="Enter password",border_color="#9391E6",border_width=2)
+        password_one=CTkEntry(master=frame,width=200, placeholder_text="Enter password",border_color="#9391E6",border_width=2,
+                              validate="key",validatecommand=(frame.register(on_limit),"%S","%P"),show="*")
         password_one.place(relx=0.6, rely=0.3)
+
+        def checkbox_event():
+              
+                
+                if check_var.get() == "on":
+                    password_one.configure(show="")
+                    password_two.configure(show="")
+                else:
+                    password_one.configure(show="*")
+                    password_two.configure(show="*")
+                print("checkbox toggled, current value:", check_var.get())
+
+
+        check_var = customtkinter.StringVar(value="off")
+        checkbox = customtkinter.CTkCheckBox(master=frame, text="show password", command=checkbox_event,
+                                                variable=check_var, onvalue="on", offvalue="off",checkbox_height=15, checkbox_width=15)
+
+        checkbox.place(x=561, y=70)
 
         password_two_label= CTkLabel(master=frame, text="Confirm password",font=("Tahoma",12),text_color="#100E75")
         password_two_label.place(relx=0.6, rely=0.48)
         
-        password_two=CTkEntry(master=frame,width=200, placeholder_text="Enter codes",border_color="#9391E6",border_width=2)
+        password_two=CTkEntry(master=frame,width=200, placeholder_text="Enter codes",border_color="#9391E6",border_width=2,
+                              validate="key",validatecommand=(frame.register(on_limit),"%S","%P"),show="*")
         password_two.place(relx=0.6, rely=0.56)
       
         changepass_btn = CTkButton(master=frame, font=("Tahoma",12,"bold"),fg_color="#9391E6",text="SUBMIT", width=200,command=change_pass)
@@ -113,11 +140,24 @@ class ForgotPassWindow(tk.Toplevel):
         self.login_app = login_app
         self.title("Forgot Password")
         self.geometry("688x375")
+        self.center_window()
         self.setup_ui()
     def back_to_login(self):
         self.destroy()
         self.login_app.deiconify()
-    
+    def center_window(self):
+        # Get the width and height of the window
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+
+        window_width = 688  # Width of the window
+        window_height = 375  # Height of the window
+
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+
+        # Set the window position
+        self.geometry("+{}+{}".format(x, y))
     def change_password(self):
         self.withdraw()
         ChangePassWindow(self)
@@ -150,6 +190,7 @@ class ForgotPassWindow(tk.Toplevel):
                     code.configure(state='normal')
                     messagebox.showinfo("Success", "Code sent to your email. Check your inbox.")
                     email.delete(0,'end')
+                    return
 
                 else:
                     messagebox.showerror("Error", "Email not registered. Please try again.")
@@ -181,6 +222,7 @@ class ForgotPassWindow(tk.Toplevel):
             
             if not six_codes:
                 messagebox.showerror("Error", "Invalid Input.")
+                code.delete(0,'end')
 
    
             elif six_codes==codes:
@@ -188,8 +230,10 @@ class ForgotPassWindow(tk.Toplevel):
                   messagebox.showinfo("Succcess", "You can now change your password!.")
 
                   self.change_password()
+                  code.delete(0,'end')
             else:
                 messagebox.showerror("Error", "The code have entered did not match.")
+                code.delete(0,'end')
         
          
         frame = CTkFrame(master=self, width=688, height=375, fg_color="#F4F5F6")
@@ -206,7 +250,9 @@ class ForgotPassWindow(tk.Toplevel):
 
         email_label= CTkLabel(master=frame, text="Email:",font=("Tahoma",12),text_color="#100E75")
         email_label.place(relx=0.6, rely=0.23)
-
+        def on_enter_press(event):
+            send_code.invoke() 
+            
         def on_validate( entry_value):
    
             return  len(entry_value) < 30 
@@ -232,7 +278,7 @@ class ForgotPassWindow(tk.Toplevel):
       
         verify = CTkButton(master=frame, font=("Tahoma",12,"bold"),fg_color="#9391E6",text="SUBMIT", width=200, command=the_code)
         verify.place(relx=0.6, rely=0.68)
-
+        self.bind("<Return>", on_enter_press)
        
 
 
@@ -247,7 +293,22 @@ class LoginApp(tk.Tk):
         self.title("Login")
         self.geometry("688x375")
         self.setup_login()
+        self.center_window()
 
+
+    def center_window(self):
+        # Get the width and height of the window
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+
+        window_width = 688  # Width of the window
+        window_height = 375  # Height of the window
+
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+
+        # Set the window position
+        self.geometry("+{}+{}".format(x, y))
     def open_add_seller(self):
         self.withdraw()
         ForgotPassWindow(self)
@@ -256,36 +317,49 @@ class LoginApp(tk.Tk):
 
     def setup_login(self):
 
+
         def login_clicked():
-       
-            my_db= my_connection.cursor()
-            emails = email.get()
-            passwords = password.get()
+            my_db = my_connection.cursor()
+            email_input = email.get()
+            password_input = password.get()
             
-            if not all([emails,passwords]):
+            if not all([email_input, password_input]):
                 messagebox.showerror("Error", "All fields are required!")
                 return
 
-            query = "SELECT COUNT(*) FROM sellers_tbl WHERE email=%s AND password=%s"
-            data = (emails, passwords)
+          
+            query_sellers = "SELECT COUNT(*) FROM sellers_tbl WHERE email=%s AND password=%s"
+            data_sellers = (email_input, password_input)
+
+        
+            query_admins = "SELECT COUNT(*) FROM admin WHERE email=%s AND password=%s"
+            data_admins = (email_input, password_input)
 
             try:
-                my_db.execute(query, data)
-                result = my_db.fetchone()
+               
+                my_db.execute(query_sellers, data_sellers)
+                result_sellers = my_db.fetchone()
 
-                
-                if result and result[0] > 0:
+              
+                my_db.execute(query_admins, data_admins)
+                result_admins = my_db.fetchone()
 
+                if result_sellers and result_sellers[0] > 0:
+                 
                     self.withdraw()
-                    subprocess.Popen(["python", r"D:\DS102PROJECT\Src\\dash_board.py"])
-                  
+                    subprocess.Popen(["python", r"D:\\DS102PROJECT\\Src\\seller_dashaboard.py"])
                     
+                elif result_admins and result_admins[0] > 0:
+                    
+                    self.withdraw()
+                    subprocess.Popen(["python", r"D:\\DS102PROJECT\\Src\\dash_board.py"])
                     
                 else:
                     messagebox.showerror("Error", "Invalid email or password!")
 
             except mysql.connector.Error as err:
                 messagebox.showerror("Error", f"Failed to query database: {err}")
+
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<lOGIN WIDGETS>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         frame = CTkFrame(master=self, width=688, height=375, fg_color="#F4F5F6")
@@ -325,7 +399,9 @@ class LoginApp(tk.Tk):
         password=CTkEntry(master=frame,width=200, placeholder_text="Enter password",border_color="#9391E6",border_width=2,show="*",
                           validate="key",validatecommand=(frame.register(on_limit),"%S","%P"))
         password.place(relx=0.6, rely=0.56)
-
+        def on_enter_press(event):
+            login_btn.invoke() 
+            
 
         def checkbox_event():
     
@@ -345,6 +421,8 @@ class LoginApp(tk.Tk):
 
         forgot_pass = CTkButton(master=frame, hover_color="#F4F5F6",text="forgot password?",font=("Tahoma",10),text_color="#100E75",fg_color="#F4F5F6", width=200,command=self.open_add_seller)
         forgot_pass.place(relx=0.6, rely=0.85)
+    
+        self.bind("<Return>", on_enter_press)
 
 def main():
     app = LoginApp()
