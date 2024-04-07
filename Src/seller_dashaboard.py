@@ -85,45 +85,71 @@ class Seller_dash_App:
         
 #==============================================================================================================      
      
-          
-        def print_treeview_to_pdf(treeview, filename,logo_path):
-                c = canvas.Canvas(filename, pagesize=letter)
-                page_width, page_height = letter
-                x_offset = (page_width - 100) / 2  
-                y_offset = page_height - 100 - 50  
-                line_height = 20
-                left_margin = 80
-                line_margin = 5
-                line_length = page_width - 3 * left_margin + 20
-                logo = ImageReader(logo_path)
-                c.drawImage(logo, x_offset, y_offset, width=80, height=80) 
-                y_offset -= 80 
+        def print_treeview_to_pdf(treeview, filename, logo_path, address, contact_number):
+            c = canvas.Canvas(filename, pagesize=letter)
+            page_width, page_height = letter
+            x_offset = (page_width - 100) / 2  
+            y_offset = page_height - 100 - 50  
+            line_height = 20
+            left_margin = 80
+            line_margin = 5
+            line_length = page_width - 3 * left_margin + 20
+            logo = ImageReader(logo_path)
+            logo_width = 80
+            logo_height = 80
+            logo_x_offset = (page_width - logo_width) / 2
+            logo_y_offset = page_height - 150  # Adjust the vertical position of the logo
+            c.drawImage(logo, logo_x_offset, logo_y_offset, width=logo_width, height=logo_height)
 
-               
-                columns = treeview['columns']
+            # Adjust the y-offset for address and contact number
+            address_y_offset = logo_y_offset - 30  # Adjust the vertical position of the address
+            contact_number_y_offset = address_y_offset - line_height
 
-                for i, column in enumerate(columns):
-                    header_x_offset = left_margin + i * 120 
-                    c.drawString(header_x_offset, y_offset, column)
-                y_offset -= line_height              
+            # Draw address and contact number centered
+            address_width = c.stringWidth(address)
+            contact_number_width = c.stringWidth(contact_number)
+            address_x_offset = (page_width - address_width) / 2
+            contact_number_x_offset = (page_width - contact_number_width) / 2
+
+            c.drawString(address_x_offset, address_y_offset, address)
+            c.drawString(contact_number_x_offset, contact_number_y_offset, contact_number)
+
+            # Adjust y-offset for the receipt data
+            y_offset = contact_number_y_offset - 50  # Adjust the margin between contact number and data
+
+            columns = treeview['columns']
+
+            for i, column in enumerate(columns):
+                header_x_offset = left_margin + i * 120 
+                c.drawString(header_x_offset, y_offset, column)
+            y_offset -= line_height              
+
+            for item in treeview.get_children():
+                item_values = treeview.item(item, 'values')
+                for i, value in enumerate(item_values):
+                    c.drawString(left_margin + i * 120, y_offset, str(value))  
+                y_offset -= line_height 
+
+            separator_y_offset = y_offset + line_margin
+            c.line(left_margin, separator_y_offset, left_margin + line_length, separator_y_offset)
+
+            # Adjust y_offset for the next row
+            y_offset -= line_margin
+
+
+            grand_total = gtotal.get()
+            grand_total_text = f"Grand Total: {grand_total}"
+            grand_total_width = c.stringWidth(grand_total_text)
+            grand_total_x_offset = page_width - left_margin - grand_total_width-60
+            c.drawString(grand_total_x_offset, separator_y_offset - line_height, grand_total_text)
+
+            c.save()
 
 
 
 
-              
-                for item in treeview.get_children():
-                    item_values = treeview.item(item, 'values')
-                    for i, value in enumerate(item_values):
-                        c.drawString(left_margin + i * 120, y_offset, str(value))  
-                    y_offset -= line_height 
 
-                separator_y_offset = y_offset + line_margin
-                c.line(left_margin, separator_y_offset, left_margin + line_length, separator_y_offset)
 
-                # Adjust y_offset for the next row
-                y_offset -= line_margin
-              
-                c.save()
 
 
        
@@ -158,8 +184,11 @@ class Seller_dash_App:
                                     icon="question", option_1="No", option_2="Yes")
                 response = msg.get()
                 if response == "Yes":
+                    address = "Address: Longos, Malabon City"
+                    contact_number = "Contact Number: 09488749263"
+                   
                     logo_path = r"D:\\DS102PROJECT\\Icon\\logos.png" 
-                    print_treeview_to_pdf(treeview, "treeview.pdf",logo_path) 
+                    print_treeview_to_pdf(treeview, "treeview.pdf",logo_path,address, contact_number) 
                     try:
                         subprocess.run(["start", "treeview.pdf"], shell=True) 
                         treeview.delete(*treeview.get_children()) 
