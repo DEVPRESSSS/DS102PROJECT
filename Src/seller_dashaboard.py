@@ -11,14 +11,13 @@ from tkinter import messagebox,ttk
 from CTkTable import *
 from CTkTableRowSelector import *
 from CTkMessagebox import*
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pdf2image import convert_from_bytes
 from PyPDF2 import PdfWriter, PdfReader
 import io
-from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image, Paragraph, Spacer
-from reportlab.lib.units import inch
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
 
 
 
@@ -37,32 +36,16 @@ my_connection= mysql.connector.connect(
 )
 my_db= my_connection.cursor()
 
-class Seller_dash_App(tk.Tk):
-    def __init__(self):
-        super().__init__()
-        self.geometry("1034x600")
-        self.minsize(1034, 600)
+class Seller_dash_App:
+    def __init__(self, master):
+       
+        self.master = master
         self.setup_seller_dashboard()
-        self.center_window()
-    def back_to_login(self):
-            self.withdraw()
-            subprocess.Popen(["python", r"D:\\DS102PROJECT\\Src\\Login.py"])
-    def center_window(self):
-        # Get the width and height of the window
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
-
-        window_width = 1034  # Width of the window
-        window_height = 600  # Height of the window
-
-        x = (screen_width - window_width) // 2
-        y = (screen_height - window_height) // 2
-
-        # Set the window position
-        self.geometry("+{}+{}".format(x, y))
+      
+   
     def setup_seller_dashboard(self):
-        
-
+        self.master.geometry("1034x600")
+        self.master.minsize(1034,600)
 #==============================================================================================================      
         def show_error(message=None):
              CTkMessagebox(title="Invalid Input", message="Please put value in Quantity textbox or Product Name", icon="cancel")
@@ -101,86 +84,127 @@ class Seller_dash_App(tk.Tk):
 
         
 #==============================================================================================================      
- 
+     
+          
+        def print_treeview_to_pdf(treeview, filename,logo_path):
+                c = canvas.Canvas(filename, pagesize=letter)
+                page_width, page_height = letter
+                x_offset = (page_width - 100) / 2  
+                y_offset = page_height - 100 - 50  
+                line_height = 20
+                left_margin = 80
+                line_margin = 5
+                line_length = page_width - 3 * left_margin + 20
+                logo = ImageReader(logo_path)
+                c.drawImage(logo, x_offset, y_offset, width=80, height=80) 
+                y_offset -= 80 
 
-        def ask_question(current_name, price_product, subtotal, quantity):
+               
+                columns = treeview['columns']
+
+                for i, column in enumerate(columns):
+                    header_x_offset = left_margin + i * 120 
+                    c.drawString(header_x_offset, y_offset, column)
+                y_offset -= line_height              
+
+
+
+
+              
+                for item in treeview.get_children():
+                    item_values = treeview.item(item, 'values')
+                    for i, value in enumerate(item_values):
+                        c.drawString(left_margin + i * 120, y_offset, str(value))  
+                    y_offset -= line_height 
+
+                separator_y_offset = y_offset + line_margin
+                c.line(left_margin, separator_y_offset, left_margin + line_length, separator_y_offset)
+
+                # Adjust y_offset for the next row
+                y_offset -= line_margin
+              
+                c.save()
+
+
+       
+#==============================================================================================================      
+
+ 
+        def ask_question(current_name, quantity, price_product, subtotal):
             msg = CTkMessagebox(title="Confirmation", message="Do you want to process this transaction?",
                                 icon="question", option_1="No", option_2="Yes")
             response = msg.get()
 
             if response == "Yes":
-                total = Decimal(subtotal)
-                # Define column widths
-                column_widths = [20, 10, 5, 10]  # Adjust as needed
+                    pname.delete(0,'end')
+                    qty.delete(0,'end')
+                    new_row = [current_name, quantity, price_product, subtotal]
+                    treeview.insert('', 'end', values=new_row)
+                    total = 0
+                    for item in treeview.get_children():
+                        subtotal = float(treeview.item(item, 'values')[3])  
+                        total += subtotal
+                        gtotal.delete(0,'end')
+                        gtotal.insert(0, total)
 
-                # Format the content for each column
-                formatted_content = [
-                    f"{current_name[:column_widths[0]]:<{column_widths[0]}}",
-                    f"{price_product:^{column_widths[1]}}",
-                    f"{quantity:^{column_widths[2]}}",
-                    f"{total:^{column_widths[3]}}",
-                ]
-
-                new_content = '\t'.join(formatted_content) + '\n'
-
-                existing_content = [line for line in preview_receipt.cget("text").splitlines()[3:] if
-                                    line.strip() and not line.startswith("Grand Total:")]
-
-                updated_dynamic_content = '\n'.join(existing_content + [new_content])
-
-                grand_total = sum(Decimal(line.split('\t')[2]) for line in existing_content) + total
-
-                # Format the receipt text
-                updated_receipt_text = "===========BODENGHARDWARE============\n" \
-                                    "================Receipt===============\n" \
-                                    "ProductName\tPrice\tQty\tTotal\n" + \
-                                    updated_dynamic_content
-
-                updated_receipt_text += f"\nGrand Total:\t\t{grand_total}\n"
-
-                preview_receipt.configure(text=updated_receipt_text)
-
-                update_stock(current_name, quantity)
-                clear()
+                
             else:
                 print("Click 'No' to cancel!")
 
 
+        def on_print_button_click():
+            if treeview.get_children():  
+                msg = CTkMessagebox(title="Confirmation", message="Do you want to print this transaction?",
+                                    icon="question", option_1="No", option_2="Yes")
+                response = msg.get()
+                if response == "Yes":
+                    logo_path = r"D:\\DS102PROJECT\\Icon\\logos.png" 
+                    print_treeview_to_pdf(treeview, "treeview.pdf",logo_path) 
+                    try:
+                        subprocess.run(["start", "treeview.pdf"], shell=True) 
+                        treeview.delete(*treeview.get_children()) 
+                    except Exception as e:
+                        print("Error opening PDF:", e)
+            else:
+                empty_msg = CTkMessagebox(title="You cant print the data", message="The Treeview is empty.", icon="info")
+               
 #==============================================================================================================
 
 
         frame = CTkFrame(
             master=self.master,
-            fg_color="#F4F5F6",
-            border_color="#1B770C",
-            border_width=1,
+            fg_color="#F6F5F5",
             width=1000,
             height=580,
             corner_radius=20
            
         )
-        frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        frame.pack(expand=True, fill="both")
 
       
         tabview =CTkTabview(master=frame,
-                            width=950,
+                            width=1020,
                             height=550,
-                            fg_color="#F4F5F6")
-        tabview.place(relx=0.025,rely=0.01)
-
+                            fg_color = ("#F6F5F5", "#EEEEEE"))
+        tabview.pack()
         tabview.add("tab 1") 
         tabview.add("tab 2") 
+        tabview.add("tab 3") 
+        tabview.add("tab 4") 
+        tabview.add("tab 5") 
+        tabview.rename("tab 1","Dashboard")
+        tabview.rename("tab 2","Sell Products")
+        tabview.rename("tab 3","My Sales")
+        tabview.rename("tab 4", "Product Reports") 
+        tabview.rename("tab 5", "Manage Profile") 
 
-        tabview.rename("tab 1","Sell Products")
-        tabview.rename("tab 2","Sales reports")
-
-        tabview.set("Sell Products")
+        tabview.set("Dashboard")
 
 
         label_pname= CTkLabel(master=tabview.tab("Sell Products"),
-                              text="Product Name:",
+                              text="PRODUCT NAME:",
                               font=("Tahoma",10,"bold"),
-                              text_color="#125B50")
+                              text_color="#222831")
         label_pname.place(relx=0.01, rely=0.04)
 
         pname = CTkEntry(master=tabview.tab("Sell Products"),
@@ -200,10 +224,10 @@ class Seller_dash_App(tk.Tk):
             
             if search:
                
-               query= "SELECT * FROM products where ProductName LIKE %s OR Price LIKE %s"
+               query = "SELECT `ProductID`, `ProductName`, `Category`, `Price`, `QuantityOnHand`, `Current_stock` FROM `products` WHERE ProductName LIKE %s OR Price LIKE %s"
                value= ("%" + search + "%","%" + search + "%")
             else:
-                query = "SELECT * FROM sellers_tbl"
+                query = "SELECT `ProductID`, `ProductName`, `Category`, `Price`, `QuantityOnHand`, `Current_stock` FROM `products`"
                 value = ()
             my_db.execute(query, value)
             data = my_db.fetchall()
@@ -227,9 +251,9 @@ class Seller_dash_App(tk.Tk):
 
         
         label_qty= CTkLabel(master=tabview.tab("Sell Products"),
-                              text="Quantity:",
+                              text="QUANTITY:",
                               font=("Tahoma",10,"bold"),
-                              text_color="#125B50")
+                              text_color="#222831")
         label_qty.place(relx=0.01, rely=0.15)
 
 #==============================================================================================================      
@@ -267,11 +291,11 @@ class Seller_dash_App(tk.Tk):
                 elif price_product==0:
                     show_error("Price of the product is not defined due to the invalid productname")
                 elif quantity > stock:
-                    print(stock)
+                   
                     show_quantity()
                 else:
                     subtotal = Decimal(price_product) * int(quantity)
-                    ask_question(product_name, price_product,  subtotal, quantity)
+                    ask_question(product_name, quantity,price_product, subtotal)
             else:
                 show_error_in()
                 return
@@ -280,20 +304,7 @@ class Seller_dash_App(tk.Tk):
            
            
 #==============================================================================================================  
-        def create_pdf_receipt():
-           
-            # pdf= FPDF("P","mm","A4")
-            # w=210
-            # h=33
-            # pdf.set_font("Arial","B",12)
-            # pdf.add_page()
-            # pdf.cell(60,7,"ProductName", border=1)
-            # pdf.cell(60,7,"ProductName", border=1)
-            # pdf.cell(60,7,"ProductName", border=1)
-
-            
-            # pdf.output("Receipt.pdf")
-            pass
+     
         
         
 #==============================================================================================================  
@@ -309,7 +320,7 @@ class Seller_dash_App(tk.Tk):
         qty.place(relx=0.01, rely=0.2)
        
         sell= CTkButton(master=tabview.tab("Sell Products"),
-                       width=120,
+                       width=100,
                        text="Sell",
                        cursor="hand2",
                      
@@ -325,12 +336,12 @@ class Seller_dash_App(tk.Tk):
             qty.delete(0, 'end')
   
         clear_btn= CTkButton(master=tabview.tab("Sell Products"),
-                       width=120,
+                       width=100,
                        text="Clear",
                        cursor="hand2",
                        command=clear
                        )
-        clear_btn.place(relx=0.17, rely=0.29)
+        clear_btn.place(relx=0.13, rely=0.29)
 #==============================================================================================================      
 
         #REFRESH BUTTON 
@@ -344,19 +355,19 @@ class Seller_dash_App(tk.Tk):
             table.update_values(table_data)
         
         refresh_btn= CTkButton(master=tabview.tab("Sell Products"),
-                       width=120,
+                       width=100,
                        text="Refresh",
                        cursor="hand2",
                        command=refresh)
                        
-        refresh_btn.place(relx=0.33, rely=0.29)
+        refresh_btn.place(relx=0.25, rely=0.29)
 #==============================================================================================================
         
         separate_label= CTkLabel(master=tabview.tab("Sell Products"),
-                              text="Product Table Preview",
-                              
-                              text_color="#FFFFFF",
-                              fg_color="#125B50",
+                              text="PRODUCT LIST",
+                              font=("Tahoma",10,"bold"),
+                              text_color="#222831",
+                              fg_color="transparent",
                               width=612,
                               height=25,
                               corner_radius=5
@@ -392,7 +403,7 @@ class Seller_dash_App(tk.Tk):
                     product_name = table_data[cell["row"]][product_name_index]
                     global stock
                     stock = table_data[cell["row"]][current_stock]
-                    print(stock)
+                  
                     pname.delete(0, 'end')
                     pname.insert(0, product_name)
                 else:
@@ -419,10 +430,10 @@ class Seller_dash_App(tk.Tk):
         table_frame.place(relx=0.01, rely=0.45)
         
         table = CTkTable(master=table_frame,row=0, column=6,
-                         colors=["#F8F8F8", "#EAEAEA"],
+                         colors=["#FFF7F1", "#EAEAEA"],
                          values= table_data,
                          header_color=("#E5C287"),
-                         font=("Tahoma",10,"bold"),
+                         font=("Tahoma",12),
                          width=10,
                          height=20,
                          padx=0.5,
@@ -434,29 +445,38 @@ class Seller_dash_App(tk.Tk):
 
         label_receipt= CTkLabel(master=tabview.tab("Sell Products"),
                               text="RECEIPT PREVIEW",
-                              font=("Tahoma",10,"bold"),
-                              text_color="#125B50")
+                              font=("Tahoma",10,"bold"))
         label_receipt.place(relx=0.78, rely=0.04)
 
-        receipt_frame= CTkFrame(master= tabview.tab("Sell Products"),
-                                height=439,
-                                width=300,
-                                border_width=1,
-                                border_color="#125B50",
-                                fg_color="#FFFFFF")
-        receipt_frame.place(relx=0.674, rely=0.09)
-        preview_receipt= CTkLabel(master= receipt_frame,
-                              text="",
-                              font=("Tahoma",10,"bold"),
-                              text_color="#125B50")
-        preview_receipt.place(relx=0.025, rely=0.02)
-        
+#==============================================================================================================
+        receipt_frame = CTkFrame(tabview.tab("Sell Products"), width=400,height=400,fg_color="#FFFFFF",
+                                         border_color="#125B50",border_width=1)
+        receipt_frame.place(relx=0.64, rely=0.09)
+        global receipt_headers
+        receipt_headers = ["ProductName", "Quantity", "Price","Total"]
+
+       
+        treeview = ttk.Treeview(master=receipt_frame,columns=receipt_headers, show="headings", height=28)
+
+        for header in receipt_headers:
+            treeview.heading(header, text=header)
+        treeview.column("ProductName", width=150) 
+        treeview.column("Quantity", width=150) 
+        treeview.column("Price", width=120) 
+        treeview.column("Total", width=100) 
+        style = ttk.Style()
+        style.configure("Treeview.Heading", font=("Tahoma", 12))
+        style.configure("Treeview", font=("Tahoma", 12))         
+        treeview.pack() 
+
+    
+#==============================================================================================================
         
         logout= CTkButton(master=tabview.tab("Sell Products"),
                        width=90,
                        text="Log Out",
                        cursor="hand2",
-                       command=self.back_to_login)
+                      )
                        
         logout.place(relx=0.90, rely=0)
 
@@ -464,64 +484,38 @@ class Seller_dash_App(tk.Tk):
                        width=120,
                        text="Print receipt",
                        cursor="hand2",
-                       command=create_pdf_receipt)
+                       command=on_print_button_click
+                       )
                        
-        print_btn.place(relx=0.79, rely=0.91)
+        print_btn.place(relx=0.65, rely=0.89)
+
+        gtotal_label=CTkLabel(master=tabview.tab("Sell Products"),
+                        text="GRAND TOTAL:",
+                        font=("Tahoma",10,"bold"),
+                        text_color="#222831")
+        gtotal_label.place(relx=0.82,rely=0.89)
+
+        gtotal= CTkEntry(master=tabview.tab("Sell Products"),
+                        width=80,
+                        border_width=0,
+                        placeholder_text="0",
+                        
+                        state="normal",
+                        text_color="#222831",
+                        )
+        gtotal.place(relx=0.90,rely=0.89)
+
        
-        # def export_to_pdf(self):
-        #     file_path = filedialog.asksaveasfilename(defaultextension=".pdf")
-        #     if file_path:
-        #         doc = SimpleDocTemplate(file_path, pagesize=letter)
 
-        #     # Add logo image
-        #     logo_path = "C:/Users/russe/Downloads/433969516_942025734229990_8532999142125472888_n.png"  # Correct path to the logo image
-
-        #     # Resize the logo image
-        #     resized_logo_path = "resized_logo.png"
-        #     self.resize_image(logo_path, resized_logo_path, width=1*inch, height=1*inch)
-
-           
-        #     cafe_info_text = [
-        #         "HARDWARE POS",
-        #         "S. DE OCAMPO ST BRYGY 143",
-        #         "Sampaloc, Manila",
-        #         "09078632798",
-        #         "Date: " + datetime.now().strftime('%m-%d-%Y')  # Date now
-        #     ]
-
-        #     # Create a paragraph style
-        #     cafe_info_style = ParagraphStyle('Title', fontSize=12, leading=14, alignment=1)
-
-        #     # Create a Paragraph object
-        #     cafe_info = Paragraph("<br />".join(cafe_info_text), cafe_info_style)
-
-        #     # Extracting data from the treeview
-        #     data = [[self.table.heading(col)["text"] for col in self.table["columns"][1:]]]  # Exclude the ID column
-        #     data += [list(self.table.item(item, "values"))[1:] for item in self.table.get_children()]  # Exclude the ID column
-
-        #     # Converting binary data to strings (if needed)
-        #     data = [[str(cell, 'utf-8') if isinstance(cell, bytes) else cell for cell in row] for row in data]
-        #     t = Table(data)
-        #     t.setStyle(TableStyle([('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        #                            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        #                            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        #                            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        #                            ('GRID', (0, 0), (-1, -1), 1, colors.black)]))
-
-        #     # Build content
-        #     content = [Image(resized_logo_path), cafe_info, Spacer(1, 12), t]
-
-        #     doc.build(content)
-        #     messagebox.showinfo("Export to PDF", "PDF generated successfully!")
-        #     subprocess.Popen([file_path], shell=True)
+        
+    
 
 
 def main():
-    # root = CTk()
-    # root.title("Seller Dashboard")  
-    app =  Seller_dash_App()
-    app.mainloop()
-    
+    root = CTk()
+    root.title("Seller Dashboard")  
+    app =  Seller_dash_App(root)
+    root.mainloop()
 
 
 if __name__ == "__main__":
