@@ -137,8 +137,9 @@ class Category_Windows(tk.Toplevel):
                 my_db.execute(query, values)
                 my_connection.commit()
                 messagebox.showinfo("Success", "Record created successfully!")
-                refresh()
+               
                 clear_btn()
+                
                 
 
             except mysql.connector.Error as err:
@@ -164,7 +165,7 @@ class Category_Windows(tk.Toplevel):
             table_data.extend([custom_headers] + data)
             table.update_values(table_data)
 
-
+       
         back= CTkButton(
                         master=frame,
                         text="Back",
@@ -190,9 +191,9 @@ class Category_Windows(tk.Toplevel):
                         my_db.execute(query, values)
                         my_connection.commit()
                         messagebox.showinfo("Success", "Record deleted successfully!")
-                        refresh()
+                        
                         clear_btn()
-                
+                        
                 else:
                     messagebox.showerror("Error", "Failed to delete the record")
 
@@ -219,8 +220,8 @@ class Category_Windows(tk.Toplevel):
         highlighted_row = None
       
         def users(cell):
-            global highlighted_row
-            global price_product
+            global highlighted_row,cat_id_index
+           
 
             if cell["row"] == 0 or cell["row"] >= len(table_data):
                 return
@@ -231,7 +232,7 @@ class Category_Windows(tk.Toplevel):
             if cell["row"] != highlighted_row:
                 table.edit_row(cell["row"], fg_color=table.hover_color)
                 highlighted_row = cell["row"]
-                global cat_id_index
+                
                 cat_id_index = custom_headers.index("CategoryID")
                 product_name_index = custom_headers.index("CategoryName")
 
