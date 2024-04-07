@@ -62,21 +62,10 @@ class Seller_dash_App:
         def on_validate(char, entry_value):
             return char.isdigit() and len(entry_value) < 4 or char == ""     
 #============================================================================================================== 
-              
-        def validate_manual_input():   
-            payment= Decimal(gtotal.get())  
-            try:
-                input_money = Decimal(combobox.get())
-                if input_money < payment:
-                    print("Error: Input money is less than the payment")
-                else:
-                    change_money = input_money - payment
-                    change_money = round(change_money, 2)
-                    print(change_money)
-            except InvalidOperation as e:
-                print("Error:", e)
-                print("Invalid input:", combobox.get())
-
+                  
+      
+    
+#============================================================================================================== 
         def update_stock(product_name, quantity):
 
            
@@ -89,16 +78,8 @@ class Seller_dash_App:
                 refresh()
             except mysql.connector.Error as err:
                 print(f"Failed to update stock: {err}")
-
-
-
-
-
 #==============================================================================================================      
-
-
-        
-#==============================================================================================================      
+      
      
         def print_treeview_to_pdf(treeview, filename, logo_path, address, contact_number):
             c = canvas.Canvas(filename, pagesize=letter)
@@ -152,11 +133,29 @@ class Seller_dash_App:
             y_offset -= line_margin
 
 
-            grand_total = gtotal.get()
+            grand_total = Decimal(gtotal.cget("text"))
             grand_total_text = f"Grand Total: {grand_total}"
             grand_total_width = c.stringWidth(grand_total_text)
             grand_total_x_offset = page_width - left_margin - grand_total_width-60
             c.drawString(grand_total_x_offset, separator_y_offset - line_height, grand_total_text)
+
+
+            payment= Decimal(payment_txt.get())
+            payment_text = f"Payment: {payment}"
+            payment_width = c.stringWidth(payment_text)
+            payment_x_offset = grand_total_x_offset
+            payment_y_offset = separator_y_offset - 2 * line_height
+            c.drawString(payment_x_offset, payment_y_offset, payment_text)
+
+
+               
+            change= Decimal(change_total.cget("text"))
+            
+            change_text = f"Change: {change}"
+            change_width = c.stringWidth(change_text)
+            change_x_offset = grand_total_x_offset
+            change_y_offset = payment_y_offset - line_height
+            c.drawString(change_x_offset, change_y_offset, change_text)
 
 
             current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -169,6 +168,7 @@ class Seller_dash_App:
             c.drawString(datetime_x_offset, contact_number_y_offset - line_height, current_datetime)
 
             c.save()
+
 
 
 
@@ -196,42 +196,79 @@ class Seller_dash_App:
                     for item in treeview.get_children():
                         subtotal = float(treeview.item(item, 'values')[3])  
                         total += subtotal
-                        gtotal.delete(0,'end')
-                        gtotal.insert(0, total)
+                        
+                        gtotal.configure(text=f"{total}")
 
                 
             else:
                 print("Click 'No' to cancel!")
 
 
+#=========================================================================================================================
+
+        def show_payment_zero():
+             CTkMessagebox(title="Invalid Grandtotal", message="The grandtotal is not valid or equal to zero", icon="cancel")
+#=========================================================================================================================
+        def show_checkmark():
+            CTkMessagebox(title="PDF receipt",message="Receipt created successfully.",
+                        icon="check", option_1="Ok")
+#=========================================================================================================================
+
         def on_print_button_click():
 
-            payment = Decimal(combobox.get())
-            total_value= Decimal(gtotal.get())
-        
-            if payment<total_value:
+           
+            payment_str = payment_txt.get()
+            if not payment_str:
+                show_payment_zero()
+                return
+
+            try:
+                payment = Decimal(payment_str)
+            except InvalidOperation:
                 show_payment_error()
                 return
 
-            
-            if treeview.get_children():  
-                msg = CTkMessagebox(title="Confirmation", message="Do you want to print this transaction?",
-                                    icon="question", option_1="No", option_2="Yes")
-                response = msg.get()
-                if response == "Yes":
-                    address = "Address: Longos, Malabon City"
-                    contact_number = "Contact Number: 09488749263"
-                   
-                    logo_path = r"D:\\DS102PROJECT\\Icon\\logos.png" 
-                    print_treeview_to_pdf(treeview, "treeview.pdf",logo_path,address, contact_number) 
-                    try:
-                        subprocess.run(["start", "treeview.pdf"], shell=True) 
-                        treeview.delete(*treeview.get_children()) 
-                    except Exception as e:
-                        print("Error opening PDF:", e)
+            total_value_str = gtotal.cget("text")
+            if not total_value_str:
+                show_payment_zero()
+                return
+
+            try:
+                total_value = Decimal(total_value_str)
+            except InvalidOperation:
+                show_payment_error()
+                return
+
+            if payment < total_value:
+                show_payment_error()
+                return
+
             else:
-                empty_msg = CTkMessagebox(title="You cant print the data", message="The Treeview is empty.", icon="info")
-               
+                if treeview.get_children():  
+                    msg = CTkMessagebox(title="Confirmation", message="Do you want to print this transaction?",
+                                        icon="question", option_1="No", option_2="Yes")
+                    response = msg.get()
+                    if response == "Yes":
+                        address = "Address: Longos, Malabon City"
+                        contact_number = "Contact Number: 09488749263"
+
+                        result_change=payment-total_value
+                        result_change = round(result_change, 2)
+                        # change_total.delete(0,'end')
+                        change_total.configure(text=f"{result_change}")
+                        logo_path = r"D:\\DS102PROJECT\\Icon\\logos.png" 
+                        show_checkmark()
+                        print_treeview_to_pdf(treeview, "treeview.pdf",logo_path,address, contact_number) 
+                       
+                        
+                        try:
+                            subprocess.run(["start", "treeview.pdf"], shell=True) 
+                            treeview.delete(*treeview.get_children()) 
+                        except Exception as e:
+                            print("Error opening PDF:", e)
+                else:
+                    empty_msg = CTkMessagebox(title="You cant print the data", message="The Treeview is empty.", icon="info")
+                
 #==============================================================================================================
 
 
@@ -520,7 +557,7 @@ class Seller_dash_App:
         receipt_headers = ["ProductName", "Quantity", "Price","Total"]
 
        
-        treeview = ttk.Treeview(master=receipt_frame,columns=receipt_headers, show="headings", height=28)
+        treeview = ttk.Treeview(master=receipt_frame,columns=receipt_headers, show="headings", height=24)
 
         for header in receipt_headers:
             treeview.heading(header, text=header)
@@ -551,65 +588,58 @@ class Seller_dash_App:
                        command=on_print_button_click
                        )
                        
-        print_btn.place(relx=0.86, rely=0.945)
+        print_btn.place(relx=0.86, rely=0.84)
 
         gtotal_label=CTkLabel(master=tabview.tab("Sell Products"),
                         text="GRAND TOTAL:",
                         font=("Tahoma",10,"bold"),
                         text_color="#222831")
-        gtotal_label.place(relx=0.82,rely=0.89)
+        gtotal_label.place(relx=0.82,rely=0.78)
         payment_label=CTkLabel(master=tabview.tab("Sell Products"),
                         text="PAYMENT:",
                         font=("Tahoma",10,"bold"),
                         text_color="#222831")
-        payment_label.place(relx=0.65,rely=0.89)
+        payment_label.place(relx=0.65,rely=0.78)
 
-        gtotal= CTkEntry(master=tabview.tab("Sell Products"),
+        gtotal= CTkLabel(master=tabview.tab("Sell Products"),
                         width=80,
-                        border_width=0,
-                        placeholder_text="0",
-                        
-                        state="normal",
+                        text="",
                         text_color="#222831",
                         )
-        gtotal.place(relx=0.90,rely=0.89)
+        gtotal.place(relx=0.90,rely=0.78)
+
+        change_label=CTkLabel(master=tabview.tab("Sell Products"),
+                        text="CHANGE:",
+                        font=("Tahoma",10,"bold"),
+                        text_color="#222831")
+        change_label.place(relx=0.65,rely=0.89)
+
+        change_total= CTkLabel(master=tabview.tab("Sell Products"),
+                        width=80,
+                        text_color="#222831",
+                        text=""
+                        )
+        change_total.place(relx=0.65,rely=0.94)
+
         def show_payment_error():
              CTkMessagebox(title="Invalid Payment", message="Your payment must not be less than to the grand total", icon="cancel")
 
-        def combobox_callback(choice):
-            try:
-                payment = Decimal(gtotal.get())
-                
-
-                if choice is not None:
-                    try:
-                        choice = Decimal(choice)
-
-                        if choice < payment:
-                            show_payment_error()
-                            return 
-                        else:
-                            global change_money
-                            change_money = choice - payment
-                            change_money = round(change_money, 2)
-                            print(change_money)
-                    except InvalidOperation as e:
-                        print("Error:", e)
-                        print("Invalid choice:", choice)  # Print problematic input value
-            except InvalidOperation as e:
-                         print("Error:", e)
-                        
 
 
-             
+        payment_txt = CTkEntry(master=tabview.tab("Sell Products"),
+                                border_width=1)
+        payment_txt.place(relx=0.65, rely=0.84)
+
+        my_image = customtkinter.CTkImage(light_image=Image.open(r"D:\\DS102PROJECT\\Icon\\logos.png"),
+                                  dark_image=Image.open(r"D:\\DS102PROJECT\\Icon\\logos.png"),
+                                  size=(100, 100))
+
+        image_label = customtkinter.CTkLabel(master=tabview.tab("Sell Products"), 
+                                             image=my_image, text="",
+                                             width=100,height=100)
         
-
-        combobox = customtkinter.CTkComboBox(master=tabview.tab("Sell Products"), values=["1000", "800","500","200","100"],
-                                            command=combobox_callback)
-        combobox.set("1000")
-
-        combobox.place(relx=0.65, rely=0.945)
-       
+        image_label.place(relx=0.45,rely=0.1)
+        
 
         
     
