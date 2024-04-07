@@ -18,6 +18,7 @@ import io
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
+from datetime import datetime
 
 
 
@@ -61,6 +62,20 @@ class Seller_dash_App:
         def on_validate(char, entry_value):
             return char.isdigit() and len(entry_value) < 4 or char == ""     
 #============================================================================================================== 
+              
+        def validate_manual_input():   
+            payment= Decimal(gtotal.get())  
+            try:
+                input_money = Decimal(combobox.get())
+                if input_money < payment:
+                    print("Error: Input money is less than the payment")
+                else:
+                    change_money = input_money - payment
+                    change_money = round(change_money, 2)
+                    print(change_money)
+            except InvalidOperation as e:
+                print("Error:", e)
+                print("Invalid input:", combobox.get())
 
         def update_stock(product_name, quantity):
 
@@ -143,6 +158,16 @@ class Seller_dash_App:
             grand_total_x_offset = page_width - left_margin - grand_total_width-60
             c.drawString(grand_total_x_offset, separator_y_offset - line_height, grand_total_text)
 
+
+            current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            datetime_width = c.stringWidth(current_datetime)
+
+            # Adjust the x-offset for the date and time
+            datetime_x_offset = (page_width - datetime_width) / 2
+
+            # Draw the date and time centered below the contact number
+            c.drawString(datetime_x_offset, contact_number_y_offset - line_height, current_datetime)
+
             c.save()
 
 
@@ -157,6 +182,7 @@ class Seller_dash_App:
 
  
         def ask_question(current_name, quantity, price_product, subtotal):
+            
             msg = CTkMessagebox(title="Confirmation", message="Do you want to process this transaction?",
                                 icon="question", option_1="No", option_2="Yes")
             response = msg.get()
@@ -179,6 +205,15 @@ class Seller_dash_App:
 
 
         def on_print_button_click():
+
+            payment = Decimal(combobox.get())
+            total_value= Decimal(gtotal.get())
+        
+            if payment<total_value:
+                show_payment_error()
+                return
+
+            
             if treeview.get_children():  
                 msg = CTkMessagebox(title="Confirmation", message="Do you want to print this transaction?",
                                     icon="question", option_1="No", option_2="Yes")
@@ -516,13 +551,18 @@ class Seller_dash_App:
                        command=on_print_button_click
                        )
                        
-        print_btn.place(relx=0.65, rely=0.89)
+        print_btn.place(relx=0.86, rely=0.945)
 
         gtotal_label=CTkLabel(master=tabview.tab("Sell Products"),
                         text="GRAND TOTAL:",
                         font=("Tahoma",10,"bold"),
                         text_color="#222831")
         gtotal_label.place(relx=0.82,rely=0.89)
+        payment_label=CTkLabel(master=tabview.tab("Sell Products"),
+                        text="PAYMENT:",
+                        font=("Tahoma",10,"bold"),
+                        text_color="#222831")
+        payment_label.place(relx=0.65,rely=0.89)
 
         gtotal= CTkEntry(master=tabview.tab("Sell Products"),
                         width=80,
@@ -533,7 +573,42 @@ class Seller_dash_App:
                         text_color="#222831",
                         )
         gtotal.place(relx=0.90,rely=0.89)
+        def show_payment_error():
+             CTkMessagebox(title="Invalid Payment", message="Your payment must not be less than to the grand total", icon="cancel")
 
+        def combobox_callback(choice):
+            try:
+                payment = Decimal(gtotal.get())
+                
+
+                if choice is not None:
+                    try:
+                        choice = Decimal(choice)
+
+                        if choice < payment:
+                            show_payment_error()
+                            return 
+                        else:
+                            global change_money
+                            change_money = choice - payment
+                            change_money = round(change_money, 2)
+                            print(change_money)
+                    except InvalidOperation as e:
+                        print("Error:", e)
+                        print("Invalid choice:", choice)  # Print problematic input value
+            except InvalidOperation as e:
+                         print("Error:", e)
+                        
+
+
+             
+        
+
+        combobox = customtkinter.CTkComboBox(master=tabview.tab("Sell Products"), values=["1000", "800","500","200","100"],
+                                            command=combobox_callback)
+        combobox.set("1000")
+
+        combobox.place(relx=0.65, rely=0.945)
        
 
         
