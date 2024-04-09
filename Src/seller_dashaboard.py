@@ -7,7 +7,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import subprocess
 import mysql.connector
-from tkinter import messagebox,ttk
+from tkinter import ttk
 from CTkTable import *
 from CTkTableRowSelector import *
 from CTkMessagebox import*
@@ -198,7 +198,7 @@ class Seller_dash_App:
                         total += subtotal
                         
                         gtotal.configure(text=f"{total}")
-
+                        update_stock(current_name, quantity)
                 
             else:
                 print("Click 'No' to cancel!")
@@ -289,17 +289,11 @@ class Seller_dash_App:
                             fg_color = ("#F6F5F5", "#EEEEEE"))
         tabview.pack()
         tabview.add("tab 1") 
-        tabview.add("tab 2") 
-        tabview.add("tab 3") 
-        tabview.add("tab 4") 
-        tabview.add("tab 5") 
-        tabview.rename("tab 1","Dashboard")
-        tabview.rename("tab 2","Sell Products")
-        tabview.rename("tab 3","My Sales")
-        tabview.rename("tab 4", "Product Reports") 
-        tabview.rename("tab 5", "Manage Profile") 
+      
+        tabview.rename("tab 1","Sell Products")
+       
 
-        tabview.set("Dashboard")
+        tabview.set("Sell Products")
 
 
         label_pname= CTkLabel(master=tabview.tab("Sell Products"),
@@ -462,6 +456,8 @@ class Seller_dash_App:
                        command=refresh)
                        
         refresh_btn.place(relx=0.25, rely=0.29)
+
+    
 #==============================================================================================================
         
         separate_label= CTkLabel(master=tabview.tab("Sell Products"),
@@ -500,6 +496,8 @@ class Seller_dash_App:
 
 
                 if cell["row"] < len(table_data):
+                    pID=  table_data[cell["row"]][product_id_index]
+
                     price_product = table_data[cell["row"]][price_index]
                     product_name = table_data[cell["row"]][product_name_index]
                     global stock
@@ -507,6 +505,11 @@ class Seller_dash_App:
                   
                     pname.delete(0, 'end')
                     pname.insert(0, product_name)
+
+
+                    # product_picture = get_product_picture(pID)
+                    # if product_picture is not None:
+                    #    display_images(product_picture)
                 else:
                     highlighted_row = None
             else:
@@ -525,7 +528,39 @@ class Seller_dash_App:
         table_data= [custom_headers]+ data
 #==============================================================================================================
      
-       
+        def get_product_picture(product_id):
+            
+
+            try:
+                query = "SELECT `productPicture` FROM `productpicture` WHERE `productID`= %s"
+                values = (product_id,)
+                my_db.execute(query, values)
+                data = my_db.fetchone()
+                return data[0] if data else None
+            except Exception as e:
+                print("Error retrieving product picture:", e)
+
+
+        # def display_images(product_picture):
+        #         if product_picture: 
+        #             try:
+        #                 pil_image = Image.open(io.BytesIO(product_picture))
+
+        #                 label_width = image_label.winfo_width()
+        #                 label_height = image_label.winfo_height()
+        #                 pil_image = pil_image.resize((label_width, label_height))
+
+        #                 ctk_image = CTkImage(pil_image, size=(label_width, label_height))
+
+        #                 image_label.configure(image=ctk_image)
+        #                 image_label.image = ctk_image
+        #             except Exception as e:
+        #                 print("Error displaying image:", e)
+        #         else:
+        #             print("No image found for product.")
+#==============================================================================================================
+
+                return None
         table_frame = CTkScrollableFrame(tabview.tab("Sell Products"), width=590,height=250,fg_color="#FFFFFF",
                                          border_color="#125B50",border_width=0.5)
         table_frame.place(relx=0.01, rely=0.45)
@@ -623,22 +658,16 @@ class Seller_dash_App:
 
         def show_payment_error():
              CTkMessagebox(title="Invalid Payment", message="Your payment must not be less than to the grand total", icon="cancel")
-
+        def on_validates(char, entry_value):
+                return char.isdigit() and len(entry_value) <=6 or char == ""
 
 
         payment_txt = CTkEntry(master=tabview.tab("Sell Products"),
-                                border_width=1)
+                                border_width=1,validate="key", 
+                            validatecommand=(tabview.register(on_validates), "%S", "%P"))
         payment_txt.place(relx=0.65, rely=0.84)
 
-        my_image = customtkinter.CTkImage(light_image=Image.open(r"D:\\DS102PROJECT\\Icon\\logos.png"),
-                                  dark_image=Image.open(r"D:\\DS102PROJECT\\Icon\\logos.png"),
-                                  size=(100, 100))
-
-        image_label = customtkinter.CTkLabel(master=tabview.tab("Sell Products"), 
-                                             image=my_image, text="",
-                                             width=100,height=100)
-        
-        image_label.place(relx=0.45,rely=0.1)
+     
         
 
         

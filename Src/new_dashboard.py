@@ -12,6 +12,7 @@ import mysql.connector
 from mysql.connector import Error
 from tkinter import messagebox,ttk
 from tkinter import filedialog
+from CTkMessagebox import*
 import io
 
 
@@ -104,12 +105,27 @@ class DashboardApp(tk.Tk):
 
                         )
         label_for_pname.place(relx=0.05,rely=0.04)
+#===================================================================================================================
+
+        def show_info():
+           
+            CTkMessagebox(title="Product", message="Product create successfully!", icon="ok")
+
+
+
+
+
+
+
+
+
+#===================================================================================================================
 
         #Validations for entriess>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-        def on_validate(char, entry_value):
+        def on_validate_pname(char, entry_value):
         
-            return not char.isdigit() and len(entry_value) < 50 or char == ""
+            return not char.isdigit() and len(entry_value) < 30 or char == ""
 
         #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -118,7 +134,7 @@ class DashboardApp(tk.Tk):
                         border_width=2,
                         width=200,
                         validate="key", 
-                        validatecommand=(reports.register(on_validate), "%S", "%P"),
+                        validatecommand=(reports.register(on_validate_pname), "%S", "%P"),
                         font=("Tahoma", 12)
                         )
         product_name.place(relx=0.05, rely=0.18)
@@ -137,17 +153,24 @@ class DashboardApp(tk.Tk):
         #Validations for entriess>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         def on_validate(char, entry_value):
             return char.isdigit() and len(entry_value) < 11 or char == ""
-        #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        
+        def on_validate_des(char, entry_value):
+                 return not char.isdigit() and len(entry_value) < 30 or char == ""
 
+        #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+         
 
         description= CTkEntry(
                         master=reports,
                         border_width=2,
                         width=200,
                         font=("Tahoma", 12),
+                        validate="key", 
+                        validatecommand=(reports.register(on_validate_des), "%S", "%P"),
+                     
                         )
         description.place(relx=0.05, rely=0.6)
-
+        
 
         #It will clear the buttons everytime i call the function>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         def clear_btn():
@@ -155,6 +178,9 @@ class DashboardApp(tk.Tk):
             description.delete(0,'end')
             price.delete(0,'end')
             qty.delete(0,'end')
+            combobox.set("")
+            image_label.cget("text")
+           
 #===================================================================================================================
 
         def insert_image(product_id, selected_file_path):
@@ -186,8 +212,8 @@ class DashboardApp(tk.Tk):
            
             
 
-            query = "INSERT INTO products (ProductName, Description, Category, Price, QuantityOnHand) VALUES ( %s, %s, %s, %s, %s)"
-            values = (pname, pdescription, category, pprice, pqty )
+            query = "INSERT INTO products (ProductName, Description, Category, Price, QuantityOnHand, Current_stock) VALUES ( %s, %s, %s, %s, %s, %s)"
+            values = (pname, pdescription, category, pprice, pqty, pqty )
 
             try:
                 my_db.execute(query, values)
@@ -198,7 +224,7 @@ class DashboardApp(tk.Tk):
                
                 insert_image(product_id, file_path_image)
                 print(file_path_image)
-                refresh()
+               
         
                 
                 clear_btn()
@@ -225,8 +251,32 @@ class DashboardApp(tk.Tk):
             table_data.clear()  
             table_data.extend([custom_headers] + data)
             table.update_values(table_data)
+            # table.get(table_data) 
 #===================================================================================================================
-       
+        def update_product(product_id, new_product_name, new_description, new_category, new_price, new_quantity):
+                query = "SELECT * FROM products WHERE ProductID = %s"
+                values = (product_id,)
+                my_db.execute(query, values)
+                current_product_info = my_db.fetchone()
+
+                # Check if there are any changes
+                if (new_product_name == current_product_info[1] and
+                    new_description == current_product_info[2] and
+                    new_category == current_product_info[3] and
+                    new_price == current_product_info[4] and
+                    new_quantity == current_product_info[5]):
+                    messagebox.showinfo("No Changes", "No changes detected. Skipping update.")
+                    return
+
+                # Update the product information
+                query = ("UPDATE products SET ProductName = %s, Description = %s, "
+                        "Category = %s, Price = %s, QuantityOnHand = %s "
+                        "WHERE ProductID = %s")
+                values = (new_product_name, new_description, new_category, new_price, new_quantity, product_id)
+                my_db.execute(query, values)
+                my_connection.commit()
+
+                messagebox.showinfo("Success", "Product information updated successfully.")
 
 
         update= CTkButton(
@@ -272,9 +322,10 @@ class DashboardApp(tk.Tk):
         combobox = customtkinter.CTkComboBox(master=reports, 
                                             values=cat,
                                             width=198,
+                                            state="readonly",
                                             command=combobox_callback
                                             )
-        combobox.set("Choose category")
+        combobox.set("")
         combobox.place(relx=0.37, rely=0.17 )
 
 
@@ -290,12 +341,27 @@ class DashboardApp(tk.Tk):
                         )
         label_for_price.place(relx=0.37,rely=0.45)
 
+        def validate_price(price):
+                if len(price) > 7:
+                    return False  
+                if not price:
+                    return True  
+                try:
+                    float_price = float(price)
+                    if float_price >= 0:
+                        return True
+                    else:
+                        return False
+                except ValueError:
+                    return False
 
 
         price= CTkEntry(
                         master=reports,
                         width=200,
-                        font=("Tahoma", 12)
+                        font=("Tahoma", 12),
+                        validate="key",  
+                        validatecommand=(reports.register(validate_price), "%P")
                         )
         price.place(relx=0.37, rely=0.6)
 
@@ -369,6 +435,9 @@ class DashboardApp(tk.Tk):
                         values = (pID,)
                         my_db.execute(query, values)
                         my_connection.commit()
+                        
+                        show_info()
+
                         messagebox.showinfo("Success", "Record deleted successfully!")
                         table.delete_row(pID)
                         clear_btn()
@@ -415,6 +484,21 @@ class DashboardApp(tk.Tk):
             
                         )
         search_btn.place(relx=0.84, rely=0.79)
+
+        refresh_btn= CTkButton(
+                        master=reports,
+                        text="Refresh",
+                        width=80,
+                        hover_color="#87A922",
+                        font=("Tahoma",12,"bold"),
+                        cursor="hand2",
+                        command=refresh
+                     
+                        
+            
+                        )
+        refresh_btn.place(relx=0.84, rely=0.83)
+
         qty_label= CTkLabel(
                         master=reports,
                         font=("Tahoma",12,"bold"),
@@ -451,7 +535,7 @@ class DashboardApp(tk.Tk):
                 description_index = custom_headers.index("Description")
                 category_index = custom_headers.index("Category")
                 price_index = custom_headers.index("Price")
-                old_stock = custom_headers.index("QuantityOnHand")
+                old_stock = custom_headers.index("Old_Stock")
 
 
                 if cell["row"] < len(table_data):
@@ -505,7 +589,7 @@ class DashboardApp(tk.Tk):
                          values= table_data,
                          header_color=("#E5C287"),
                          font=("Tahoma",12),
-                         width=10,
+                         width=5,
                          height=20,
                          padx=0.5,
                          justify="left",
@@ -571,409 +655,11 @@ class DashboardApp(tk.Tk):
 
 
 
-#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<SELLER PHASE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        frame2= CTkFrame(master=tabview.tab("Sellers"),
-                    
-                fg_color="#FFFFFF", 
-                border_color="#FFCC70",
-                width=1100,
-                height=600,
-                corner_radius=20,
-                border_width=0
-                )
-        frame2.pack(expand=True,fill="both")
 
-      
-      
-        reports1= CTkFrame(master=frame2,
-                            height=155,
-                            width=720,
-                            border_width=0,
-                            # border_color="#9391E6",
-                            fg_color="#FFFFFF"
-                            )
-        reports1.place(relx=0.25,rely=0.048)
-        label_for_name= CTkLabel(
-                        master=reports1,
-                        font=("Tahoma",10,"bold"),
-                        text_color="#1B770C",
-                        text="Fullname:"
-
-                        )
-        label_for_name.place(relx=0.05,rely=0.04)
-
-        #Validations for entriess>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-        def on_validate(char, entry_value):
-        
-            return not char.isdigit() and len(entry_value) < 50 or char == ""
-
-
-        def on_limit(char, entry_value):
-            return len(entry_value) < 60 and char.isalnum() or char == ""
-
-
-        #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-        full_name= CTkEntry(
-                        master=reports1,
-                        border_color="#1B770C",
-                        border_width=1,
-                        width=200,
-                        validate="key", 
-                        validatecommand=(reports.register(on_validate), "%S", "%P"),
-                        font=("Tahoma", 10)
-                        )
-        full_name.place(relx=0.05, rely=0.18)
-
-
-        label_for_contact= CTkLabel(
-                        master=reports1,
-                        font=("Tahoma",10,"bold"),
-                        text_color="#1B770C",
-                        text="Contact:"
-
-                        )
-        label_for_contact.place(relx=0.05,rely=0.45)
-
-
-        #Validations for entriess>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        def on_validate(char, entry_value):
-            return char.isdigit() and len(entry_value) < 11 or char == ""
-        #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
-        contact= CTkEntry(
-                        master=reports1,
-                        border_color="#1B770C",
-                        border_width=1,
-                        width=200,
-                        font=("Tahoma", 10),
-                        validate="key",
-                        validatecommand=(frame.register(on_validate), "%S", "%P"),
-                        )
-        contact.place(relx=0.05, rely=0.6)
-
-
-        #It will clear the buttons everytime i call the function>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        def clear_btn():
-            full_name.delete(0,'end')
-            contact.delete(0,'end')
-            address.delete(0,'end')
-            email.delete(0,'end')
-            password1.delete(0,'end')
-
-        #INSERT FUNCTION TO DATABASE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-        def create_record():
-            name1 = full_name.get()
-            contacts1 = contact.get()
-            addresss1 = address.get()
-            emails1 = email.get()
-            passwords1 = password1.get()
-
-            if not all([name1, contacts1, addresss1, emails1,passwords1]):
-                messagebox.showerror("Error", "All fields are required!")
-                return
-
-            query = "INSERT INTO sellers_tbl (fullname, contact, address, email, password) VALUES ( %s, %s, %s, %s, %s)"
-            values = (name1, contacts1, addresss1, emails1, passwords1)
-
-            try:
-                my_db.execute(query, values)
-                my_connection.commit()
-                messagebox.showinfo("Success", "Record created successfully!")
-             
-                clear_btn()
-                
-
-            except mysql.connector.Error as err:
-                messagebox.showerror("Error", "Failed to create record:Email is already exist")
-
-        add= CTkButton(
-                        master=reports1,
-                        text="Add",
-                        border_color="#1B770C",
-                        border_width=1,
-                        fg_color="#1B770C",
-                        width=94,
-                        hover_color="#87A922",
-                        font=("Tahoma",10,"bold"),
-                        cursor="hand2",
-                        command=create_record
-                        )
-        add.place(relx=0.05, rely=0.79)
-
-        #Update the selected row>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-        
-
-
-        update= CTkButton(
-                        master=reports1,
-                        text="Update",
-                        border_color="#4D606E",
-                        border_width=1,
-                        fg_color="#4D606E",
-                        width=94,
-                        hover_color="#3FBAC2",
-                        font=("Tahoma",10,"bold"),
-                        cursor="hand2",
-                  
-                        )
-        update.place(relx=0.2, rely=0.79)
-
-
-
-        label_for_address= CTkLabel(
-                        master=reports1,
-                        font=("Tahoma",10,"bold"),
-                        text_color="#1B770C",
-                        text="Address:"
-
-                        )
-        label_for_address.place(relx=0.37,rely=0.04)
-        address= CTkEntry(
-                        master=reports1,
-                        border_color="#1B770C",
-                        border_width=1,
-                        width=200,
-                        font=("Tahoma", 10),
-                        validate="key", 
-                        validatecommand=(reports.register(on_limit), "%S", "%P"),
-                        )
-        address.place(relx=0.37, rely=0.18)
-
-
-        label_for_email= CTkLabel(
-                        master=reports1,
-                        font=("Tahoma",10,"bold"),
-                        text_color="#1B770C",
-                        text="Email:"
-
-                        )
-        label_for_email.place(relx=0.37,rely=0.45)
-
-
-
-        email= CTkEntry(
-                        master=reports1,
-                        border_color="#1B770C",
-                        border_width=1,
-                        width=200,
-                        font=("Tahoma", 10)
-                        )
-        email.place(relx=0.37, rely=0.6)
-        clear= CTkButton(
-                        master=reports1,
-                        text="Clear",
-                        border_color="#D37676",
-                        border_width=1,
-                        fg_color="#D37676",
-                        width=94,
-                        hover_color="#EBC49F",
-                        font=("Tahoma",10,"bold"),
-                        cursor="hand2",
-                        command=clear_btn
-                        )
-        clear.place(relx=0.37, rely=0.79)
-
-
-        #IT will delete the specific record>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
-        
-        #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>..
-
-        delete= CTkButton(
-                        master=reports1,
-                        text="Delete",
-                        border_color="#BF3131",
-                        border_width=1,
-                        fg_color="#BF3131",
-                        width=94,
-                        hover_color="#EBC49F",
-                        font=("Tahoma",10,"bold"),
-                        cursor="hand2",
-                       
-                        )
-        delete.place(relx=0.52, rely=0.79)
-
-
-        search= CTkEntry(
-                        master=reports1,
-                        border_color="#1B770C",
-                        border_width=1,
-                        width=150,
-                        placeholder_text="Search here....",
-                        font=("Tahoma", 10)
-                )
-
-        search.place(relx=0.68, rely=0.79)
-
+ 
 
        
-        search_btn= CTkButton(
-                        master=reports1,
-                        text="Search",
-                        border_color="#1B770C",
-                        border_width=1,
-                        fg_color="#1B770C",
-                        width=60,
-                        hover_color="#87A922",
-                        font=("Tahoma",10,"bold"),
-                        cursor="hand2",
-                        
-            
-                        )
-        search_btn.place(relx=0.89, rely=0.79)
-        password_label= CTkLabel(
-                        master=reports1,
-                        font=("Tahoma",10,"bold"),
-                        text_color="#1B770C",
-                        text="Password:"
-
-                        )
-        password_label.place(relx=0.68,rely=0.04)
-       
-
-        password1= CTkEntry(
-                        master=reports1,
-                        border_color="#1B770C",
-                        border_width=1,
-                        show="*",
-                        width=200,
-                        font=("Tahoma", 10)
-                        )
-        password1.place(relx=0.68, rely=0.18)
-
-        def checkbox_events():
-            global password1
-            
-            if check_var1.get() == "on":
-                password1.configure(show="")
-            else:
-                password1.configure(show="*")
-          
-
-
-        check_var1 = customtkinter.StringVar(value="off")
-        checkbox1 = customtkinter.CTkCheckBox(master=reports1, text="show password", command=checkbox_events,
-                                            variable=check_var1, onvalue="on", offvalue="off",checkbox_height=15, checkbox_width=15)
-
-        checkbox1.place(x=561, y=65)
-
-        refreshs=CTkButton(master=frame2,
-                        
-                        text="Refresh",
-                        border_color="#1B770C",
-                        border_width=1,
-                        fg_color="#1B770C",
-                        width=60,
-                        hover_color="#87A922",
-                        font=("Tahoma",10,"bold"),
-                        cursor="hand2",
-                      
-                        )
-
-        refreshs.place(relx=0.88,rely=0.33)
-
-
-       
-        #Table creation>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         
-        styles = ttk.Style()
-        font_size = 12
-        header_color = "lightblue"
-        styles.configure("Treeview.Heading", font=("Tahoma", font_size),background=header_color)
-        styles.configure("Treeview", font=("Tahoma", 12))
-        tree1 = ttk.Treeview(frame2, style="Treeview")
-
-        tree1["columns"] = ("seller_id","fullname", "contact", "address", "email", "password")
-        tree1.bind("<Configure>", lambda event: tree1.column("#0", width=0))  
-
-
-        tree1.column("#0", width=0)  
-        tree1.column("seller_id", anchor="center", width=100) 
-        tree1.column("fullname", anchor="center", width=200)
-        tree1.column("contact", anchor="center", width=120)
-        tree1.column("address", anchor="center", width=150)
-        tree1.column("email", anchor="center", width=200)
-        tree1.column("password", anchor="center", width=200)
-
-
-
-
-        tree1.heading("#0", text="", anchor="center")  
-        tree1.heading("seller_id", text="Seller ID", anchor="center")
-        tree1.heading("fullname", text="Fullname", anchor="center")
-        tree1.heading("contact", text="Contact", anchor="center")
-        tree1.heading("address", text="Address", anchor="center")
-        tree1.heading("email", text="Email", anchor="center")
-        tree1.heading("password", text="Password", anchor="center")
-
-
-
-
-        querys = "SELECT * FROM sellers_tbl"
-        my_db.execute(querys)
-        datas = my_db.fetchall()
-
-
-
-        for row in datas:
-            tree1.insert("", "end", text="", values=row)
-
-
-
-        tree1.place(relx=0.29,rely=0.4)
-        #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
-        #Refresh Table>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        def update_tables():
-        
-            query = "SELECT * FROM sellers_tbl"
-            my_db.execute(query)
-            data = my_db.fetchall()
-
-        
-            for item in tree1.get_children():
-                tree1.delete(item)
-
-            #
-            for row in data:
-                tree1.insert("", "end", values=row)
-        update_tables()
-
-        #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
-
-        #Get the selected row>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        seller_ids = None
-        def on_row_select(event):
-            selected_items = tree1.selection()
-            if selected_items:
-                selected_item = selected_items[0]  
-                id = tree1.item(selected_item, "values") 
-            
-                if id is not None:
-                    clear_btn()
-                    global seller_ids
-                    seller_ids = id[0]
-                    full_name.insert(0, id[1] if len(id) > 1 else "")
-                    contact.insert(0, id[2] if len(id) > 2 else "")
-                    address.insert(0, id[3] if len(id) > 3 else "")
-                    email.insert(0, id[4] if len(id) > 4 else "")
-                    password1.insert(0, id[5] if len(id) > 5 else "")
-                    
-                else:
-                    messagebox.showerror("Error", "Selected row has no data")
-
-        tree1.bind("<<TreeviewSelect>>", on_row_select)
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-       
 
 
 def main():
