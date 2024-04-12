@@ -9,7 +9,7 @@ import string
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import dash_board
+
 import subprocess
 import re
 
@@ -194,6 +194,7 @@ class ForgotPassWindow(tk.Toplevel):
 
                 else:
                     messagebox.showerror("Error", "Email not registered. Please try again.")
+                    email.delete(0,'end')
 
         def send_email(receiver_email, codes):
             sender_email = "xmontemorjerald@gmail.com" 
